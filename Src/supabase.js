@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // ── CONFIG — replace with your Supabase project values ──────
 const SUPABASE_URL  = 'https://zwxgyyebrxfljvxosnuu.supabase.co';
-const SUPABASE_ANON = 'YOUR_ANON_KEY';
+const SUPABASE_ANON = 'sb_publishable_PJ7DK6Rq8hyqgxIFgCED9w_w1LYzeEf';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
