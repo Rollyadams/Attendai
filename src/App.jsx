@@ -21,9 +21,9 @@ import { createClient } from "@supabase/supabase-js";
 import * as faceapi from "face-api.js";
 
 // ── CONFIG ──────────────────────────────────────────────────
-const SUPABASE_URL  = "https://YOUR_PROJECT_REF.supabase.co";
-const SUPABASE_ANON = "YOUR_ANON_KEY";
-const MODELS_PATH   = "/models"; // face-api.js model weights in /public/models/
+const SUPABASE_URL  = "https://zwxgyyebrxfljvxosnuu.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3eGd5eWVicnhmbGp2eG9zbnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODY5OTAsImV4cCI6MjA5MDQ2Mjk5MH0.jLlBqe2PKTMQZ6U66Z5JcK36HDKYuEFTqco3qUXk4Ns";
+const MODELS_PATH = "/models"; // face-api.js model weights in /public/models/
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
