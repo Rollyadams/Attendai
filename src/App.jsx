@@ -175,6 +175,34 @@ body { background:var(--bg); color:var(--text); font-family:var(--body); }
 .success-box { background:var(--green-dim); border:1px solid rgba(46,204,113,0.3); border-radius:10px; padding:12px 16px; color:var(--green); font-size:13px; margin-bottom:16px; }
 .info-box { background:var(--teal-dim); border:1px solid rgba(0,229,196,0.2); border-radius:10px; padding:12px 16px; color:var(--teal); font-size:13px; margin-bottom:16px; }
 .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,0.2); border-top-color:var(--teal); border-radius:50%; animation:spin 0.7s linear infinite; }
+
+/* ALARM */
+.alarm-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:1000; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.3s ease; }
+.alarm-card { background:var(--bg2); border:2px solid var(--red); border-radius:20px; padding:36px; width:340px; text-align:center; box-shadow:0 0 40px rgba(255,77,109,0.3); }
+.alarm-pulse { font-size:64px; animation:alarmPulse 0.5s ease-in-out infinite alternate; }
+@keyframes alarmPulse { from{transform:scale(1)} to{transform:scale(1.15)} }
+.alarm-title { font-family:var(--display); font-size:22px; font-weight:800; color:var(--red); margin:16px 0 8px; }
+.alarm-sub { font-size:13px; color:var(--text2); margin-bottom:24px; }
+.alarm-timer { font-family:monospace; font-size:28px; font-weight:800; color:var(--amber); margin-bottom:24px; }
+
+/* MOBILE SIDEBAR */
+.sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99; }
+.menu-toggle { display:none; background:none; border:none; color:var(--text); font-size:22px; cursor:pointer; padding:4px 8px; }
+@media (max-width: 768px) {
+  .menu-toggle { display:block; }
+  .sidebar-overlay.open { display:block; }
+  .sidebar {
+    position:fixed; top:0; left:0; height:100vh; z-index:100;
+    transform:translateX(-100%); transition:transform 0.25s ease;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.4);
+  }
+  .sidebar.open { transform:translateX(0); }
+  .main { width:100vw; }
+  .content { padding: 16px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3-2 { grid-template-columns: 1fr; }
+}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:4px}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeIn 0.3s ease}
@@ -409,6 +437,39 @@ function ClockInScreen({ employee, settings }) {
   const [showOverride, setShowOverride] = useState(false);
   const [clockedOut, setClockedOut] = useState(false);
 
+  const [alarmActive, setAlarmActive] = useState(false);
+  const [alarmNextIn, setAlarmNextIn] = useState(0);
+  const alarmIntervalRef = useRef(null);
+  const alarmCountRef    = useRef(null);
+  const audioCtxRef      = useRef(null);
+
+  // Play alarm sound using Web Audio API
+  const playAlarmSound = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      audioCtxRef.current = ctx;
+      const freqs = [880, 1100, 880, 1100];
+      freqs.forEach((freq, i) => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'square';
+        gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.2 + 0.18);
+        osc.start(ctx.currentTime + i * 0.2);
+        osc.stop(ctx.currentTime + i * 0.2 + 0.2);
+      });
+      if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+    } catch(e) { console.log('Audio error:', e); }
+  };
+
+  const stopAlarm = () => {
+    setAlarmActive(false);
+    clearInterval(alarmIntervalRef.current);
+    clearInterval(alarmCountRef.current);
+  };
+
   useEffect(() => {
     // Check if already clocked in today
     const today = new Date().toISOString().slice(0,10);
@@ -417,6 +478,50 @@ function ClockInScreen({ employee, settings }) {
     loadFaceModels();
     return () => { if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop()); };
   }, [employee.id]);
+
+  // Alarm scheduler — fires at shift start, repeats every 5 mins until clocked in
+  useEffect(() => {
+    if (todayRecord) { stopAlarm(); return; } // already clocked in
+
+    const shift = employee.shifts;
+    const [sh, sm] = (shift?.start_time || '09:00').split(':').map(Number);
+
+    const checkAlarm = () => {
+      if (todayRecord) { stopAlarm(); return; }
+      const now = new Date();
+      const shiftStart = new Date(now);
+      shiftStart.setHours(sh, sm, 0, 0);
+      const diff = now - shiftStart; // ms since shift start
+      // Trigger if past shift start and not yet clocked in
+      if (diff >= 0 && !todayRecord) {
+        setAlarmActive(true);
+        playAlarmSound();
+      }
+    };
+
+    // Check every minute
+    const ticker = setInterval(checkAlarm, 60000);
+    checkAlarm(); // check immediately on mount
+
+    // Repeat alarm every 5 minutes
+    alarmIntervalRef.current = setInterval(() => {
+      if (!todayRecord) { setAlarmActive(true); playAlarmSound(); }
+    }, 5 * 60 * 1000);
+
+    // Countdown timer
+    let secs = 300;
+    alarmCountRef.current = setInterval(() => {
+      secs -= 1;
+      if (secs <= 0) secs = 300;
+      setAlarmNextIn(secs);
+    }, 1000);
+
+    return () => {
+      clearInterval(ticker);
+      clearInterval(alarmIntervalRef.current);
+      clearInterval(alarmCountRef.current);
+    };
+  }, [todayRecord, employee.shifts]);
 
   const startScan = async () => {
     setError(""); setStage("scanning");
@@ -530,6 +635,7 @@ function ClockInScreen({ employee, settings }) {
       });
 
       setTodayRecord(rec);
+      stopAlarm();
       setResult({ gpsData, faceMatch, matchScore, buddyFlag, buddyScore, isLate, lateMins, blocked:false });
       setStage("done");
 
@@ -613,8 +719,30 @@ function ClockInScreen({ employee, settings }) {
     );
   }
 
+  const fmt = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+
   return (
     <div className="clockin-wrap fade-in">
+      {alarmActive && (
+        <div className="alarm-overlay">
+          <div className="alarm-card">
+            <div className="alarm-pulse">🔔</div>
+            <div className="alarm-title">Resumption Reminder!</div>
+            <div className="alarm-sub">Your shift has started. Please clock in now.</div>
+            <div className="alarm-timer">{fmt(alarmNextIn)}</div>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',fontSize:15,padding:14}}
+                onClick={() => { stopAlarm(); document.getElementById('clockin-btn')?.click(); }}>
+                📸 Clock In Now
+              </button>
+              <button className="btn btn-ghost" style={{width:'100%',justifyContent:'center',fontSize:12}}
+                onClick={stopAlarm}>
+                Dismiss (alarm repeats in 5 min)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="clockin-card">
         {stage==="override_pending" ? (
           <>
@@ -694,7 +822,7 @@ function ClockInScreen({ employee, settings }) {
               className="btn btn-primary"
               style={{width:"100%",justifyContent:"center",fontSize:15,padding:14}}
               onClick={startScan}
-              disabled={stage==="scanning"}
+              id="clockin-btn" disabled={stage==="scanning"}
             >
               {stage==="scanning" ? <><span className="spinner"/>&nbsp;Verifying…</> : "📸 Scan & Clock In"}
             </button>
@@ -1029,6 +1157,7 @@ const PAGE_TITLES = { dashboard:"Dashboard Overview", clockin:"AI Check-In", emp
 // ── ROOT APP ──────────────────────────────────────────────────
 export default function App() {
   const [authUser, setAuthUser]       = useState(null);  // Supabase auth session
+  const [sidebarOpen, setSidebarOpen]   = useState(false);
   const [employee, setEmployee]       = useState(null);  // employees row
   const [page, setPage]               = useState("clockin");
   const [loading, setLoading]         = useState(true);
@@ -1124,7 +1253,8 @@ export default function App() {
     <>
       <style>{FONTS}{CSS}</style>
       <div className="app">
-        <div className="sidebar">
+        <div className={`sidebar-overlay ${sidebarOpen?"open":""}`} onClick={()=>setSidebarOpen(false)} />
+        <div className={`sidebar ${sidebarOpen?"open":""}`}>
           <div className="sidebar-logo">
             <div className="brand">Attend<span>AI</span></div>
             <div className="tagline">Workforce Intelligence</div>
@@ -1141,7 +1271,7 @@ export default function App() {
               <div key={section.section}>
                 <div className="nav-section-label">{section.section}</div>
                 {section.items.map(item => (
-                  <div key={item.id} className={`nav-item ${page===item.id?"active":""}`} onClick={()=>setPage(item.id)}>
+                  <div key={item.id} className={`nav-item ${page===item.id?"active":""}`} onClick={()=>{ setPage(item.id); setSidebarOpen(false); }}>
                     <span className="icon">{item.icon}</span>
                     {item.label}
                     {item.badge && pendingOverrides>0 && <span className="nav-badge">{pendingOverrides}</span>}
@@ -1157,7 +1287,8 @@ export default function App() {
 
         <div className="main">
           <div className="topbar">
-            <div className="topbar-title">{PAGE_TITLES[page]||"AttendAI"}</div>
+            <button className="menu-toggle" onClick={()=>setSidebarOpen(o=>!o)}>☰</button>
+          <div className="topbar-title">{PAGE_TITLES[page]||"AttendAI"}</div>
             <span className="topbar-time"><Clock /></span>
             <div className="topbar-dot" title="Supabase Connected" />
           </div>
