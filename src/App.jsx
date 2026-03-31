@@ -254,10 +254,10 @@ function LoginScreen({ onLogin }) {
       // Fetch employee profile
       const { data: emp, error: empError } = await supabase
         .from("employees")
-        .select("*, departments(name), shifts(name,start_time,end_time,grace_mins)")
+        .select("*")
         .eq("auth_user_id", data.user.id)
-        .single();
-      if (empError) throw new Error("Employee profile not found. Contact admin.");
+        .maybeSingle();
+      if (empError || !emp) throw new Error("Employee profile not found. Contact admin.");
 
       onLogin(emp);
     } catch (e) {
