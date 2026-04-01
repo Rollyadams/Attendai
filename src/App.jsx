@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import * as faceapi from "face-api.js";
 
-// ── NEW PROJECT CONFIG (jlsknoavpckqyjcxsomt) ──
+// ── NEW PROJECT CONFIG (Directly linked to jlsknoavpckqyjcxsomt) ──
 const URL = "https://supabase.co";
 const KEY = "sb_publishable_-EejwHhdJ7x660mftYhR_Q_o65wxc6J";
 const supabase = createClient(URL, KEY);
@@ -20,7 +20,7 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, sess) => setSession(sess));
 
-    // Handle mobile back button
+    // Fix for Android/Mobile Back Button
     window.history.pushState({ view: 'home' }, '');
     window.onpopstate = () => {
       if (view !== "dashboard") {
@@ -80,7 +80,7 @@ export default function App() {
         ) : (
           <div style={s.cameraView}>
             <video ref={videoRef} autoPlay muted style={s.video} />
-            <button style={s.btn} onClick={() => alert("Face tracking active...")}>Verify Face</button>
+            <button style={s.btn} onClick={() => alert("Verification logic ready...")}>Verify Face</button>
             <button onClick={() => setView("dashboard")} style={s.cancel}>Back to Dashboard</button>
           </div>
         )}
