@@ -21,18 +21,26 @@ export default function App() {
   const handleAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
+    
+    // Safety Timeout: If it takes > 10s, something is blocking the network
+    const timeout = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+        alert("Connection Timeout: Your network or a browser extension is blocking Supabase.");
+      }
+    }, 10000);
+
     try {
       const { data, error } = isSignUp 
         ? await supabase.auth.signUp({ email, password })
         : await supabase.auth.signInWithPassword({ email, password });
 
+      clearTimeout(timeout);
       if (error) throw error;
       
-      if (isSignUp && !data.session) {
-        alert("Check your email to confirm your account!");
-      }
+      if (isSignUp && !data.session) alert("Account created! Please check your email.");
     } catch (err) {
-      alert("System Alert: " + err.message);
+      alert("Error: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -43,25 +51,19 @@ export default function App() {
       <div style={s.card}>
         <h1 style={s.logo}>AttendAI</h1>
         <form onSubmit={handleAuth} style={s.form}>
-          <input type="email" placeholder="Email" onChange={e => setEmail(e.target.value)} style={s.input} required />
-          <input type="password" placeholder="Password" onChange={e => setPassword(e.target.value)} style={s.input} required />
-          <button type="submit" style={s.btn} disabled={loading}>{loading ? "Connecting..." : (isSignUp ? "Join Now" : "Login")}</button>
-          <p onClick={() => setIsSignUp(!isSignUp)} style={s.link}>{isSignUp ? "Have an account? Login" : "Need an account? Sign Up"}</p>
+          <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} style={s.input} required />
+          <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} style={s.input} required />
+          <button type="submit" style={s.btn} disabled={loading}>{loading ? "Connecting..." : (isSignUp ? "Create Account" : "Login")}</button>
+          <p onClick={() => setIsSignUp(!isSignUp)} style={s.link}>{isSignUp ? "Already have an account? Login" : "New user? Sign Up"}</p>
         </form>
       </div>
     </div>
   );
 
   return (
-    <div style={s.dashboard}>
-      <header style={s.header}>
-        <b>AttendAI</b>
-        <button onClick={() => supabase.auth.signOut()} style={s.logout}>Sign Out</button>
-      </header>
-      <div style={s.content}>
-        <h2>Logged in as:</h2>
-        <p>{session.user.email}</p>
-      </div>
+    <div style={s.dash}>
+      <header style={s.head}><b>AttendAI</b><button onClick={() => supabase.auth.signOut()} style={s.out}>Sign Out</button></header>
+      <div style={s.body}><h2>Welcome!</h2><p>{session.user.email}</p></div>
     </div>
   );
 }
@@ -69,13 +71,13 @@ export default function App() {
 const s = {
   page: { height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0F4F8' },
   card: { background: 'white', padding: '40px', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', width: '350px', textAlign: 'center' },
-  logo: { color: '#1A56DB', marginBottom: '20px' },
+  logo: { color: '#1A56DB', marginBottom: '20px', fontWeight: '800' },
   form: { display: 'flex', flexDirection: 'column', gap: '15px' },
-  input: { padding: '12px', borderRadius: '8px', border: '1px solid #DDD' },
-  btn: { padding: '12px', background: '#1A56DB', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' },
-  link: { fontSize: '12px', color: '#1A56DB', cursor: 'pointer', marginTop: '10px' },
-  dashboard: { height: '100vh', background: '#F8FAFC' },
-  header: { display: 'flex', justifyContent: 'space-between', padding: '20px', background: 'white', borderBottom: '1px solid #EEE' },
-  logout: { color: 'red', border: 'none', background: 'none' },
-  content: { padding: '40px', textAlign: 'center' }
+  input: { padding: '14px', borderRadius: '10px', border: '1px solid #E2E8F0', fontSize: '16px' },
+  btn: { padding: '15px', background: '#1A56DB', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px' },
+  link: { fontSize: '13px', color: '#1A56DB', cursor: 'pointer', marginTop: '10px' },
+  dash: { height: '100vh', background: '#F8FAFC' },
+  head: { display: 'flex', justifyContent: 'space-between', padding: '20px', background: 'white', borderBottom: '1px solid #EEE' },
+  out: { color: 'red', border: 'none', background: 'none', fontWeight: 'bold' },
+  body: { padding: '40px', textAlign: 'center' }
 };
