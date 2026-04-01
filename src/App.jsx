@@ -1,48 +1,46 @@
-import { useState, useEffect } from "react";
-import { supabase } from "./supabaseClient"; 
+import { useState, useEffect, useRef } from "react";
+import { supabase } from "./supabaseClient"; // Uses your hardcoded client
+import * as faceapi from "face-api.js";
+
+// OFFICE COORDINATES (Update these for your Geofence)
+const OFFICE_LAT = 6.6018; 
+const OFFICE_LNG = 3.3515;
+const MAX_DISTANCE = 200; // Meters
 
 export default function App() {
   const [session, setSession] = useState(null);
+  const [view, setView] = useState("dashboard"); // dashboard, camera, roster, forgot
+  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const videoRef = useRef(null);
 
-  // 1. Session Gatekeeper
+  // ── 1. AUTH & BACK BUTTON LOGIC ──
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
+
+    // Fix for Android/Mobile Back Button
+    window.history.pushState({ view: 'home' }, '');
+    window.onpopstate = () => {
+      if (view !== "dashboard") {
+        setView("dashboard");
+        window.history.pushState({ view: 'home' }, '');
+      }
+    };
     return () => subscription.unsubscribe();
-  }, []);
+  }, [view]);
 
-  // 2. Auth Handler with Hard Timeout
-  const handleAuth = async (e) => {
+  // ── 2. ACTIONS ──
+  const handleAuth = async (e, type) => {
     e.preventDefault();
-    if (loading) return;
-    
     setLoading(true);
-    
-    // Safety Timeout: Stops the "Connecting..." hang after 5 seconds
-    const timeout = setTimeout(() => {
-      if (loading) {
-        setLoading(false);
-        alert("Network Timeout: Your mobile data or Wi-Fi is blocking the connection to Supabase.");
-      }
-    }, 5000);
-
     try {
-      const { data, error } = isSignUp 
-        ? await supabase.auth.signUp({ email, password })
-        : await supabase.auth.signInWithPassword({ email, password });
-
-      clearTimeout(timeout);
+      const { error } = type === 'login' 
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({ email, password });
       if (error) throw error;
-      
-      if (isSignUp && !data.session) {
-        alert("Account Created! Check your email for a confirmation link.");
-      }
+      if (type === 'signup') alert("Account Created! You can now login.");
     } catch (err) {
       alert("Error: " + err.message);
     } finally {
@@ -50,65 +48,84 @@ export default function App() {
     }
   };
 
+  const handleClockIn = async () => {
+    const detection = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions());
+    if (!detection) return alert("Identity verification failed: Face not detected.");
+
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const dist = getDistance(pos.coords.latitude, pos.coords.longitude, OFFICE_LAT, OFFICE_LNG);
+      if (dist > MAX_DISTANCE) return alert(`Geofence Error: You are ${Math.round(dist)}m away from the office.`);
+      
+      const { error } = await supabase.from('attendance').insert([{ user_id: session.user.id, status: 'present' }]);
+      if (!error) { alert("Clock-in successful!"); setView("dashboard"); }
+    }, () => alert("Location access required."));
+  };
+
+  const getDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  };
+
+  // ── 3. VIEWS ──
   if (!session) return (
-    <div style={s.page}>
-      <div style={s.card}>
-        <h1 style={s.logo}>AttendAI</h1>
-        <p style={s.sub}>{isSignUp ? "Join the team" : "Sign in to continue"}</p>
-        <form onSubmit={handleAuth} style={s.form}>
-          <input 
-            type="email" 
-            placeholder="Email Address" 
-            value={email}
-            onChange={e => setEmail(e.target.value)} 
-            style={s.input} 
-            required 
-          />
-          <input 
-            type="password" 
-            placeholder="Password" 
-            value={password}
-            onChange={e => setPassword(e.target.value)} 
-            style={s.input} 
-            required 
-          />
-          <button type="submit" style={s.btn} disabled={loading}>
-            {loading ? "Connecting..." : (isSignUp ? "Sign Up" : "Login")}
-          </button>
-          <p onClick={() => { setIsSignUp(!isSignUp); setLoading(false); }} style={s.link}>
-            {isSignUp ? "Back to Login" : "New user? Create Account"}
-          </p>
-        </form>
-      </div>
+    <div style={s.authPage}>
+      <h1 style={s.logo}>AttendAI</h1>
+      <form onSubmit={(e) => handleAuth(e, 'login')} style={s.form}>
+        <input type="email" placeholder="Email" onChange={e => setEmail(e.target.value)} style={s.input} required />
+        <input type="password" placeholder="Password" onChange={e => setPassword(e.target.value)} style={s.input} required />
+        <button type="submit" style={s.btn} disabled={loading}>{loading ? "Connecting..." : "Login"}</button>
+        <button type="button" onClick={(e) => handleAuth(e, 'signup')} style={s.secBtn}>Create Account</button>
+      </form>
     </div>
   );
 
   return (
-    <div style={s.dash}>
-      <header style={s.header}>
-        <b>AttendAI</b>
-        <button onClick={() => supabase.auth.signOut()} style={s.logout}>Sign Out</button>
-      </header>
-      <div style={s.body}>
-        <h2>Welcome back!</h2>
-        <p style={{marginTop:'10px', color:'#64748B'}}>{session.user.email}</p>
-      </div>
+    <div style={s.app}>
+      <header style={s.header}><b>AttendAI</b><button onClick={() => supabase.auth.signOut()} style={s.logout}>Sign Out</button></header>
+      <main style={s.main}>
+        {view === "dashboard" ? (
+          <div>
+            <div style={s.stats}>
+              <div style={s.card}>Present: 1</div>
+              <div style={s.card}>Late: 0</div>
+            </div>
+            <button style={s.btn} onClick={() => setView("camera")}>Clock In</button>
+            <div style={s.grid}>
+              <div style={s.tile}>Staff</div>
+              <div style={s.tile}>Records</div>
+            </div>
+          </div>
+        ) : (
+          <div style={s.cameraView}>
+            <video ref={videoRef} autoPlay muted style={s.video} />
+            <button style={s.btn} onClick={handleClockIn}>Verify & Clock In</button>
+            <button onClick={() => setView("dashboard")} style={s.cancel}>Back</button>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
 
 const s = {
-  page: { height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', padding: '20px' },
-  card: { background: 'white', padding: '40px 25px', borderRadius: '24px', width: '100%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' },
-  logo: { color: '#1A56DB', fontSize: '36px', marginBottom: '10px', fontWeight: '800' },
-  sub: { color: '#94A3B8', fontSize: '14px', marginBottom: '30px' },
-  form: { display: 'flex', flexDirection: 'column', gap: '15px' },
-  // FIXED INPUT FOR LONG EMAILS
-  input: { padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', fontSize: '16px', backgroundColor: '#F1F5F9', width: '100%', outline: 'none' },
-  btn: { padding: '18px', backgroundColor: '#1A56DB', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '16px', cursor: 'pointer', marginTop: '10px' },
-  link: { color: '#1A56DB', fontSize: '13px', marginTop: '15px', cursor: 'pointer', fontWeight: '600' },
-  dash: { height: '100vh', backgroundColor: '#F8FAFC' },
-  header: { display: 'flex', justifyContent: 'space-between', padding: '20px', backgroundColor: '#FFF', borderBottom: '1px solid #E2E8F0' },
-  logout: { color: '#DC2626', border: 'none', background: 'none', fontWeight: '600' },
-  body: { padding: '40px', textAlign: 'center' }
+  authPage: { height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', padding: '20px' },
+  logo: { color: '#1A56DB', fontSize: '32px', marginBottom: '20px', fontWeight: '800' },
+  form: { display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '350px' },
+  input: { padding: '14px', borderRadius: '10px', border: '1px solid #E2E8F0', fontSize: '16px' },
+  btn: { padding: '15px', background: '#1A56DB', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold' },
+  secBtn: { background: 'none', border: 'none', color: '#1A56DB', fontSize: '13px', cursor: 'pointer' },
+  app: { height: '100vh', backgroundColor: '#F0F4F8' },
+  header: { display: 'flex', justifyContent: 'space-between', padding: '15px', background: 'white', borderBottom: '1px solid #EEE' },
+  logout: { color: 'red', border: 'none', background: 'none', fontWeight: '600' },
+  main: { padding: '20px' },
+  stats: { display: 'flex', gap: '10px', marginBottom: '20px' },
+  card: { flex: 1, padding: '20px', background: 'white', borderRadius: '15px', textAlign: 'center', border: '1px solid #E2E8F0' },
+  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '20px' },
+  tile: { padding: '20px', background: 'white', borderRadius: '12px', textAlign: 'center', border: '1px solid #E2E8F0' },
+  cameraView: { display: 'flex', flexDirection: 'column', gap: '15px' },
+  video: { width: '100%', borderRadius: '15px', backgroundColor: 'black' },
+  cancel: { background: 'none', border: 'none', color: '#64748B', marginTop: '10px' }
 };
