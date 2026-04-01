@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-// ── HARDCODED CONFIG (Ensures guaranteed connection on Vercel) ──
-const URL = "https://supabase.co";
-const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3eGd5eWVicnhmbGp2eG9zbnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODY5OTAsImV4cCI6MjA5MDQ2Mjk5MH0.jLlBqe2PKTMQZ6U66Z5JcK36HDKYuEFTqco3qUXk4Ns";
-const supabase = createClient(URL, KEY);
+// Import the client you just shared
+import { supabase } from "./supabaseClient"; 
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -13,23 +9,27 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
 
+  // 1. Listen for Auth Changes
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sess) => setSession(sess));
+    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
     return () => subscription.unsubscribe();
   }, []);
 
+  // 2. Auth Handler with Forced Timeout
   const handleAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // 10-second safety timeout
+    // Safety Timeout: Stops the "Verifying" hang after 8 seconds
     const timer = setTimeout(() => {
       if (loading) {
         setLoading(false);
-        alert("Connection Timed Out: Check if your network blocks 'supabase.co'. Try Mobile Data.");
+        alert("Connection Timeout: Supabase is not responding. Check your internet connection or Vercel logs.");
       }
-    }, 10000);
+    }, 8000);
 
     try {
       const { data, error } = isSignUp 
@@ -38,7 +38,10 @@ export default function App() {
 
       clearTimeout(timer);
       if (error) throw error;
-      if (isSignUp && !data.session) alert("Account created! Check your email if confirmation is on.");
+      
+      if (isSignUp && !data.session) {
+        alert("Success! Check your email to confirm your account.");
+      }
     } catch (err) {
       alert("Auth Error: " + err.message);
     } finally {
@@ -46,38 +49,52 @@ export default function App() {
     }
   };
 
+  // --- LOGIN VIEW ---
   if (!session) return (
     <div style={s.page}>
       <div style={s.card}>
         <h1 style={s.logo}>AttendAI</h1>
+        <p style={s.subText}>{isSignUp ? "Join our team" : "Sign in to continue"}</p>
         <form onSubmit={handleAuth} style={s.form}>
-          <input type="email" placeholder="Email" onChange={e => setEmail(e.target.value)} style={s.in} required />
-          <input type="password" placeholder="Password" onChange={e => setPassword(e.target.value)} style={s.in} required />
-          <button type="submit" style={s.btn} disabled={loading}>{loading ? "Connecting..." : (isSignUp ? "Sign Up" : "Login")}</button>
-          <p onClick={() => setIsSignUp(!isSignUp)} style={s.link}>{isSignUp ? "Back to Login" : "New user? Create Account"}</p>
+          <input type="email" placeholder="Email" onChange={e => setEmail(e.target.value)} style={s.input} required />
+          <input type="password" placeholder="Password" onChange={e => setPassword(e.target.value)} style={s.input} required />
+          <button type="submit" style={s.btn} disabled={loading}>
+            {loading ? "Verifying..." : (isSignUp ? "Sign Up" : "Login")}
+          </button>
+          <p onClick={() => { setIsSignUp(!isSignUp); setLoading(false); }} style={s.link}>
+            {isSignUp ? "Back to Login" : "New user? Create Account"}
+          </p>
         </form>
       </div>
     </div>
   );
 
+  // --- DASHBOARD VIEW ---
   return (
     <div style={s.dash}>
-      <header style={s.header}><b>AttendAI</b><button onClick={() => supabase.auth.signOut()} style={s.out}>Sign Out</button></header>
-      <div style={s.body}><h2>Logged In! ✅</h2><p>{session.user.email}</p></div>
+      <header style={s.header}>
+        <b>AttendAI</b>
+        <button onClick={() => supabase.auth.signOut()} style={s.logout}>Sign Out</button>
+      </header>
+      <div style={s.body}>
+        <h2>System Online ✅</h2>
+        <p style={{marginTop:'10px', color:'#64748B'}}>Logged in as: {session.user.email}</p>
+      </div>
     </div>
   );
 }
 
 const s = {
-  page: { height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F0F4F8', padding: '20px' },
+  page: { height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0F4F8', padding: '20px' },
   card: { background: 'white', padding: '40px 30px', borderRadius: '24px', width: '100%', maxWidth: '380px', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' },
-  logo: { color: '#1A56DB', marginBottom: '25px', fontWeight: '800', fontSize: '32px' },
+  logo: { color: '#1A56DB', fontSize: '32px', marginBottom: '8px', fontWeight: '800' },
+  subText: { color: '#64748B', fontSize: '14px', marginBottom: '30px' },
   form: { display: 'flex', flexDirection: 'column', gap: '15px' },
-  in: { padding: '15px', borderRadius: '12px', border: '1px solid #E2E8F0', fontSize: '16px' },
-  btn: { padding: '16px', background: '#1A56DB', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px' },
-  link: { color: '#1A56DB', cursor: 'pointer', marginTop: '10px', fontSize: '13px' },
-  dash: { height: '100vh', background: '#F8FAFC' },
-  header: { display: 'flex', justifyContent: 'space-between', padding: '20px', background: 'white', borderBottom: '1px solid #EEE' },
-  out: { color: 'red', border: 'none', background: 'none', fontWeight: 'bold' },
+  input: { padding: '15px', borderRadius: '12px', border: '1px solid #E2E8F0', fontSize: '16px', backgroundColor: '#F8FAFC' },
+  btn: { padding: '16px', backgroundColor: '#1A56DB', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '16px', cursor: 'pointer' },
+  link: { color: '#1A56DB', fontSize: '13px', marginTop: '15px', cursor: 'pointer', fontWeight: '500' },
+  dash: { height: '100vh', backgroundColor: '#F8FAFC' },
+  header: { display: 'flex', justifyContent: 'space-between', padding: '20px', backgroundColor: '#FFF', borderBottom: '1px solid #E2E8F0' },
+  logout: { color: '#DC2626', border: 'none', background: 'none', fontWeight: '600' },
   body: { padding: '40px', textAlign: 'center' }
 };
