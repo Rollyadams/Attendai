@@ -80,17 +80,17 @@ body { background:var(--bg); color:var(--text); font-family:var(--body); }
 .card-title { font-family:var(--display); font-size:12px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:12px; }
 
 /* STAT CARDS — compact 2x2 grid */
-.stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
-.stat-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:14px; position:relative; box-shadow:var(--shadow); }
+.stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+.stat-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; position:relative; box-shadow:var(--shadow); }
 .stat-card.blue  { background:linear-gradient(135deg,#EBF0FF,#F0F4FF); border-color:#C7D7FE; }
 .stat-card.amber { background:linear-gradient(135deg,#FFFBEB,#FEF3C7); border-color:#FDE68A; }
 .stat-card.red   { background:linear-gradient(135deg,#FEF2F2,#FEE2E2); border-color:#FECACA; }
 .stat-card.green { background:linear-gradient(135deg,#ECFDF5,#D1FAE5); border-color:#A7F3D0; }
-.stat-icon { font-size:20px; margin-bottom:8px; }
-.stat-label { font-size:10px; color:var(--text3); font-weight:600; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:4px; }
-.stat-value { font-family:var(--display); font-size:26px; font-weight:800; line-height:1; }
+.stat-icon { font-size:16px; margin-bottom:4px; }
+.stat-label { font-size:9px; color:var(--text3); font-weight:600; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:2px; }
+.stat-value { font-family:var(--display); font-size:22px; font-weight:800; line-height:1; }
 .stat-value.blue{color:var(--primary)}.stat-value.amber{color:var(--amber)}.stat-value.red{color:var(--red)}.stat-value.green{color:var(--green)}
-.stat-sub { font-size:10px; color:var(--text3); margin-top:4px; }
+.stat-sub { font-size:9px; color:var(--text3); margin-top:2px; }
 
 /* QUICK ACTION TILES (like PalmPay) */
 .quick-actions { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
@@ -900,29 +900,25 @@ function AdminDashboard({ employees, clockIns, setPage, pendingOverrides }) {
         <div className="stat-card green">
           <div className="stat-icon">🤖</div>
           <div className="stat-label">AI Flags</div>
-          <div className="stat-value" style={{color:flagged>0?'var(--red)':'var(--green)',fontFamily:'var(--display)',fontSize:26,fontWeight:800}}>{flagged}</div>
+          <div className="stat-value" style={{color:flagged>0?'var(--red)':'var(--green)',fontFamily:'var(--display)',fontSize:22,fontWeight:800}}>{flagged}</div>
           <div className="stat-sub">buddy punch</div>
         </div>
       </div>
 
       {/* Quick action tiles */}
       <div style={{marginBottom:6,fontSize:11,color:'var(--text3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Quick Actions</div>
-      <div className="quick-actions" style={{marginBottom:14}}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:14}}>
         <div className="qa-tile" onClick={()=>setPage('clockin')}>
           <div className="qa-icon">📸</div>
           <div className="qa-label">Clock In</div>
         </div>
         <div className="qa-tile" onClick={()=>setPage('employees')}>
           <div className="qa-icon">👥</div>
-          <div className="qa-label">Staff</div>
-        </div>
-        <div className="qa-tile" onClick={()=>setPage('attendance')}>
-          <div className="qa-icon">📋</div>
-          <div className="qa-label">Records</div>
+          <div className="qa-label">Employees</div>
         </div>
         <div className="qa-tile" onClick={()=>setPage('overrides')} style={{position:'relative'}}>
           <div className="qa-icon">📍</div>
-          <div className="qa-label">Overrides</div>
+          <div className="qa-label">GPS Override</div>
           {pendingOverrides>0 && <span style={{position:'absolute',top:6,right:6,background:'var(--red)',color:'white',fontSize:9,fontWeight:700,padding:'1px 4px',borderRadius:10}}>{pendingOverrides}</span>}
         </div>
       </div>
@@ -1217,7 +1213,7 @@ function SettingsScreen({ settings, onSettingsSaved }) {
 // ── NAV CONFIG ────────────────────────────────────────────────
 const ADMIN_NAV = [
   { section:"Main",     items:[{id:"dashboard",icon:"🏠",label:"Dashboard"},{id:"clockin",icon:"📸",label:"Clock In / Out"}]},
-  { section:"Workforce",items:[{id:"employees",icon:"👥",label:"Employees"},{id:"attendance",icon:"📋",label:"Attendance"},{id:"overrides",icon:"📍",label:"GPS Overrides",badge:true}]},
+  { section:"Workforce",items:[{id:"attendance",icon:"📋",label:"Attendance"},{id:"overrides",icon:"📍",label:"GPS Overrides",badge:true}]},
   { section:"System",   items:[{id:"settings",icon:"⚙️",label:"Settings"}]},
 ];
 const EMP_NAV = [
@@ -1369,18 +1365,16 @@ export default function App() {
           {/* Bottom navigation — mobile only */}
           <div className="bottom-nav">
             {(isAdmin ? [
-              {id:'dashboard',icon:'🏠',label:'Home'},
-              {id:'clockin',  icon:'📸',label:'Clock In'},
-              {id:'attendance',icon:'📋',label:'Records'},
-              {id:'settings', icon:'⚙️',label:'Settings'},
+              {id:'dashboard', icon:'🏠', label:'Home'},
+              {id:'attendance',icon:'📋', label:'Attendance'},
+              {id:'employees', icon:'👥', label:'Employees'},
             ] : [
-              {id:'clockin', icon:'📸',label:'Clock In'},
-              {id:'myrecord',icon:'📋',label:'My Record'},
+              {id:'clockin',  icon:'📸',label:'Clock In'},
+              {id:'myrecord', icon:'📋',label:'My Record'},
             ]).map(item=>(
               <div key={item.id} className={`bn-item ${page===item.id?'active':''}`} onClick={()=>setPage(item.id)}>
                 <div className="bn-icon">{item.icon}</div>
                 <div>{item.label}</div>
-                {item.id==='dashboard' && pendingOverrides>0 && <span className="bn-badge">{pendingOverrides}</span>}
               </div>
             ))}
           </div>
