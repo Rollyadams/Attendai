@@ -21,8 +21,8 @@ import { createClient } from "@supabase/supabase-js";
 import * as faceapi from "face-api.js";
 
 // ── CONFIG ──────────────────────────────────────────────────
-const SUPABASE_URL  = "https://jlsknoavpckqyjcxsomt.supabase.co";
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impsc2tub2F2cGNrcXlqY3hzb210Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzIxMjMsImV4cCI6MjA5MDY0ODEyM30.Gv_JuxMrV39VEkDs46kWi9rzvb-_vVNhHGEruYni_-0";
+const SUPABASE_URL  = "https://zwxgyyebrxfljvxosnuu.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3eGd5eWVicnhmbGp2eG9zbnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODY5OTAsImV4cCI6MjA5MDQ2Mjk5MH0.jLlBqe2PKTMQZ6U66Z5JcK36HDKYuEFTqco3qUXk4Ns";
 const MODELS_PATH = "/models"; // face-api.js model weights in /public/models/
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -231,6 +231,35 @@ body { background:var(--bg); color:var(--text); font-family:var(--body); }
   .bn-badge { position:absolute; top:0; right:calc(50% - 18px); background:var(--red); color:white; font-size:9px; font-weight:700; padding:1px 4px; border-radius:10px; min-width:14px; text-align:center; }
 }
 
+
+/* PROFILE AVATAR BTN */
+.profile-btn { width:34px; height:34px; border-radius:50%; background:var(--primary); color:white; font-size:13px; font-weight:700; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.profile-dropdown { position:absolute; top:54px; right:12px; background:white; border:1px solid var(--border); border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:200; width:220px; overflow:hidden; }
+.pd-header { padding:16px; background:var(--primary-light); border-bottom:1px solid var(--border); }
+.pd-name { font-weight:700; font-size:14px; color:var(--text); }
+.pd-role { font-size:11px; color:var(--primary); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-top:2px; }
+.pd-item { display:flex; align-items:center; gap:10px; padding:12px 16px; font-size:13px; font-weight:500; color:var(--text); cursor:pointer; border-bottom:1px solid var(--border); transition:background 0.1s; }
+.pd-item:last-child { border-bottom:none; }
+.pd-item:hover { background:var(--bg3); }
+.pd-item.danger { color:var(--red); }
+
+/* ADD EMPLOYEE FORM */
+.form-section-title { font-family:var(--display); font-size:14px; font-weight:700; color:var(--text); margin:20px 0 12px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(max-width:500px){ .form-row { grid-template-columns:1fr; } }
+
+/* PAYROLL */
+.payslip-card { background:white; border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:12px; box-shadow:var(--shadow); }
+.payslip-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+.payslip-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--bg4); font-size:13px; }
+.payslip-row:last-child { border-bottom:none; }
+.payslip-total { display:flex; justify-content:space-between; padding:12px 0 0; font-size:15px; font-weight:700; }
+
+/* REPORTS */
+.report-filter { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.report-stat { background:var(--bg3); border-radius:10px; padding:12px; text-align:center; flex:1; min-width:80px; }
+.report-stat-val { font-family:var(--display); font-size:20px; font-weight:800; color:var(--primary); }
+.report-stat-lbl { font-size:10px; color:var(--text3); font-weight:600; text-transform:uppercase; margin-top:3px; }
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeIn 0.25s ease}
@@ -1210,16 +1239,336 @@ function SettingsScreen({ settings, onSettingsSaved }) {
   );
 }
 
+
+// ── PROFILE DROPDOWN ─────────────────────────────────────────
+function ProfileDropdown({ employee, onLogout, onNavigate, onClose }) {
+  return (
+    <div className="profile-dropdown">
+      <div className="pd-header">
+        <div className="pd-name">{employee.full_name}</div>
+        <div className="pd-role">{employee.role}</div>
+        <div style={{fontSize:11,color:'var(--text3)',marginTop:4}}>{employee.email}</div>
+      </div>
+      <div className="pd-item" onClick={()=>{onNavigate('profile');onClose();}}>👤 My Profile</div>
+      {(employee.role==='admin'||employee.role==='superadmin') && (
+        <div className="pd-item" onClick={()=>{onNavigate('addemployee');onClose();}}>➕ Add Employee</div>
+      )}
+      {(employee.role==='admin'||employee.role==='superadmin') && (
+        <div className="pd-item" onClick={()=>{onNavigate('payroll');onClose();}}>💰 Payroll</div>
+      )}
+      {(employee.role==='admin'||employee.role==='superadmin') && (
+        <div className="pd-item" onClick={()=>{onNavigate('reports');onClose();}}>📊 Reports</div>
+      )}
+      <div className="pd-item" onClick={()=>{onNavigate('settings');onClose();}}>⚙️ Settings</div>
+      <div className="pd-item danger" onClick={onLogout}>🚪 Sign Out</div>
+    </div>
+  );
+}
+
+// ── PROFILE PAGE ──────────────────────────────────────────────
+function ProfileScreen({ employee }) {
+  const initials = employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+  return (
+    <div className="fade-in">
+      <div className="card" style={{textAlign:'center',padding:'28px 20px',marginBottom:14}}>
+        <div style={{width:72,height:72,borderRadius:'50%',background:'var(--primary)',color:'white',fontSize:26,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}>{initials}</div>
+        <div style={{fontFamily:'var(--display)',fontSize:20,fontWeight:800,color:'var(--text)'}}>{employee.full_name}</div>
+        <div style={{fontSize:12,color:'var(--primary)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px',marginTop:4}}>{employee.role}</div>
+        <div style={{fontSize:13,color:'var(--text3)',marginTop:6}}>{employee.email}</div>
+      </div>
+      <div className="card">
+        <div className="card-title">Account Details</div>
+        {[
+          {label:'Full Name',   value:employee.full_name},
+          {label:'Email',       value:employee.email},
+          {label:'Phone',       value:employee.phone||'—'},
+          {label:'Role',        value:employee.role},
+          {label:'Department',  value:employee.departments?.name||'—'},
+          {label:'Shift',       value:employee.shifts?.name||'Default'},
+          {label:'GPS Policy',  value:employee.gps_policy==='office_only'?'Office Only':employee.gps_policy==='remote_allowed'?'Remote Allowed':'Hybrid'},
+          {label:'Face ID',     value:employee.face_enrolled?'✓ Enrolled':'Not enrolled'},
+        ].map(r=>(
+          <div key={r.label} style={{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid var(--border)',fontSize:13}}>
+            <span style={{color:'var(--text2)',fontWeight:500}}>{r.label}</span>
+            <span style={{fontWeight:600,color:'var(--text)'}}>{r.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── ADD EMPLOYEE SCREEN ───────────────────────────────────────
+function AddEmployeeScreen({ onSuccess }) {
+  const [form, setForm] = useState({ full_name:'', email:'', phone:'', role:'employee', gps_policy:'office_only', hourly_rate_ngn:'2500' });
+  const [depts, setDepts]   = useState([]);
+  const [shifts, setShifts] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState('');
+  const [success, setSuccess] = useState(false);
+
+  useEffect(()=>{
+    supabase.from('departments').select('*').order('name').then(({data})=>setDepts(data||[]));
+    supabase.from('shifts').select('*').order('name').then(({data})=>setShifts(data||[]));
+  },[]);
+
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const handleSubmit = async () => {
+    if (!form.full_name.trim() || !form.email.trim()) { setError('Name and email are required.'); return; }
+    setSaving(true); setError('');
+    try {
+      // Create auth user with random password (they can reset)
+      const tempPassword = Math.random().toString(36).slice(-10) + 'A1!';
+      const { data: authData, error: authErr } = await supabase.auth.admin?.createUser({
+        email: form.email, password: tempPassword, email_confirm: true
+      });
+
+      // Insert employee row (auth_user_id may be null until they sign up)
+      const { error: dbErr } = await supabase.from('employees').insert({
+        full_name:       form.full_name.trim(),
+        email:           form.email.trim().toLowerCase(),
+        phone:           form.phone||null,
+        role:            form.role,
+        department_id:   form.department_id||null,
+        shift_id:        form.shift_id||null,
+        hourly_rate_ngn: parseInt(form.hourly_rate_ngn)||2500,
+        gps_policy:      form.gps_policy,
+        is_active:       true,
+      });
+      if (dbErr) throw dbErr;
+      setSuccess(true);
+      setTimeout(()=>{ setSuccess(false); setForm({full_name:'',email:'',phone:'',role:'employee',gps_policy:'office_only',hourly_rate_ngn:'2500'}); onSuccess?.(); }, 2000);
+    } catch(e) {
+      setError(e.message||'Failed to add employee');
+    } finally { setSaving(false); }
+  };
+
+  if (success) return (
+    <div className="fade-in" style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'60vh'}}>
+      <div style={{textAlign:'center'}}>
+        <div style={{fontSize:64,marginBottom:16}}>✅</div>
+        <div style={{fontFamily:'var(--display)',fontSize:20,fontWeight:800,color:'var(--green)'}}>Employee Added!</div>
+        <div style={{fontSize:13,color:'var(--text2)',marginTop:8}}>They can now be enrolled when they first log in.</div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="fade-in">
+      {error && <div className="error-box">⚠ {error}</div>}
+      <div className="card">
+        <div className="form-section-title">Personal Information</div>
+        <div className="form-group">
+          <label className="form-label">Full Name *</label>
+          <input className="form-input" placeholder="e.g. John Adeyemi" value={form.full_name} onChange={e=>set('full_name',e.target.value)} />
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Email *</label>
+            <input className="form-input" type="email" placeholder="john@company.com" value={form.email} onChange={e=>set('email',e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Phone</label>
+            <input className="form-input" placeholder="08012345678" value={form.phone} onChange={e=>set('phone',e.target.value)} />
+          </div>
+        </div>
+
+        <div className="form-section-title">Work Details</div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Role</label>
+            <select className="form-select" value={form.role} onChange={e=>set('role',e.target.value)}>
+              <option value="employee">Employee</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">GPS Policy</label>
+            <select className="form-select" value={form.gps_policy} onChange={e=>set('gps_policy',e.target.value)}>
+              <option value="office_only">Office Only</option>
+              <option value="remote_allowed">Remote Allowed</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Department</label>
+            <select className="form-select" value={form.department_id||''} onChange={e=>set('department_id',e.target.value)}>
+              <option value="">Select Department</option>
+              {depts.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Shift</label>
+            <select className="form-select" value={form.shift_id||''} onChange={e=>set('shift_id',e.target.value)}>
+              <option value="">Select Shift</option>
+              {shifts.map(s=><option key={s.id} value={s.id}>{s.name} ({s.start_time}–{s.end_time})</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div className="form-section-title">Payment Details</div>
+        <div className="form-group">
+          <label className="form-label">Hourly Rate (₦)</label>
+          <input className="form-input" type="number" placeholder="2500" value={form.hourly_rate_ngn} onChange={e=>set('hourly_rate_ngn',e.target.value)} />
+        </div>
+
+        <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',padding:14,fontSize:14,marginTop:8}} onClick={handleSubmit} disabled={saving}>
+          {saving ? <><span className="spinner"/>&nbsp;Adding Employee…</> : '➕ Add Employee'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── PAYROLL SCREEN ────────────────────────────────────────────
+function PayrollScreen({ employees }) {
+  const [month, setMonth] = useState(new Date().toISOString().slice(0,7));
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(()=>{
+    setLoading(true);
+    const from = month+'-01', to = month+'-31';
+    supabase.from('clock_ins').select('*').gte('work_date',from).lte('work_date',to)
+      .then(({data})=>{ setRecords(data||[]); setLoading(false); });
+  },[month]);
+
+  const getEmpData = (emp) => {
+    const empRecs = records.filter(r=>r.employee_id===emp.id);
+    const hours   = empRecs.reduce((s,r)=>s+(r.hours_worked||0),0);
+    const lateDays = empRecs.filter(r=>r.is_late).length;
+    const rate    = emp.hourly_rate_ngn||2500;
+    const gross   = Math.round(hours*rate);
+    const lateDed = lateDays*(500);
+    const net     = Math.max(0, gross-lateDed);
+    return { hours:hours.toFixed(1), lateDays, gross, lateDed, net };
+  };
+
+  const totalNet = employees.reduce((s,e)=>s+getEmpData(e).net,0);
+
+  return (
+    <div className="fade-in">
+      <div style={{display:'flex',gap:10,alignItems:'center',marginBottom:16}}>
+        <input type="month" className="form-input" style={{width:180}} value={month} onChange={e=>setMonth(e.target.value)} />
+        <span style={{fontSize:12,color:'var(--text2)'}}>{employees.length} employees</span>
+      </div>
+
+      <div className="card" style={{marginBottom:14,background:'linear-gradient(135deg,var(--primary),#1447C0)',border:'none'}}>
+        <div style={{color:'rgba(255,255,255,0.7)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Total Net Payroll</div>
+        <div style={{fontFamily:'var(--display)',fontSize:32,fontWeight:800,color:'white',marginTop:4}}>₦{totalNet.toLocaleString()}</div>
+        <div style={{color:'rgba(255,255,255,0.6)',fontSize:12,marginTop:4}}>{month}</div>
+      </div>
+
+      {loading ? <div className="empty"><span className="spinner"/></div> : employees.map(emp=>{
+        const d = getEmpData(emp);
+        const initials = emp.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+        return (
+          <div key={emp.id} className="payslip-card">
+            <div className="payslip-header">
+              <div className="avatar" style={{width:40,height:40,fontSize:15,borderRadius:10}}>{initials}</div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:14}}>{emp.full_name}</div>
+                <div style={{fontSize:11,color:'var(--text3)'}}>{emp.departments?.name||'—'} · {emp.shifts?.name||'Default'}</div>
+              </div>
+              <div style={{textAlign:'right'}}>
+                <div style={{fontFamily:'var(--display)',fontSize:16,fontWeight:800,color:'var(--primary)'}}>₦{d.net.toLocaleString()}</div>
+                <div style={{fontSize:10,color:'var(--green)',fontWeight:600}}>Net Pay</div>
+              </div>
+            </div>
+            <div className="payslip-row"><span style={{color:'var(--text2)'}}>Hours Worked</span><span style={{fontWeight:600}}>{d.hours}h</span></div>
+            <div className="payslip-row"><span style={{color:'var(--text2)'}}>Hourly Rate</span><span style={{fontWeight:600}}>₦{(emp.hourly_rate_ngn||2500).toLocaleString()}</span></div>
+            <div className="payslip-row"><span style={{color:'var(--text2)'}}>Gross Pay</span><span style={{fontWeight:600}}>₦{d.gross.toLocaleString()}</span></div>
+            {d.lateDed>0 && <div className="payslip-row"><span style={{color:'var(--red)'}}>Late Deduction ({d.lateDays}×)</span><span style={{color:'var(--red)',fontWeight:600}}>-₦{d.lateDed.toLocaleString()}</span></div>}
+            <div className="payslip-total"><span>Net Pay</span><span style={{color:'var(--primary)'}}>₦{d.net.toLocaleString()}</span></div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── REPORTS SCREEN ────────────────────────────────────────────
+function ReportsScreen({ employees }) {
+  const [from, setFrom] = useState(new Date().toISOString().slice(0,8)+'01');
+  const [to,   setTo]   = useState(new Date().toISOString().slice(0,10));
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(()=>{
+    setLoading(true);
+    supabase.from('clock_ins').select('*').gte('work_date',from).lte('work_date',to)
+      .then(({data})=>{ setRecords(data||[]); setLoading(false); });
+  },[from,to]);
+
+  const totalPresent = records.filter(r=>r.status==='present'||r.status==='late').length;
+  const totalLate    = records.filter(r=>r.is_late).length;
+  const totalFlags   = records.filter(r=>r.buddy_punch_flag).length;
+  const totalHours   = records.reduce((s,r)=>s+(r.hours_worked||0),0).toFixed(1);
+
+  return (
+    <div className="fade-in">
+      <div className="report-filter">
+        <div style={{flex:1}}>
+          <div className="form-label">From</div>
+          <input type="date" className="form-input" value={from} onChange={e=>setFrom(e.target.value)} />
+        </div>
+        <div style={{flex:1}}>
+          <div className="form-label">To</div>
+          <input type="date" className="form-input" value={to} onChange={e=>setTo(e.target.value)} />
+        </div>
+      </div>
+
+      <div style={{display:'flex',gap:8,marginBottom:14}}>
+        <div className="report-stat"><div className="report-stat-val">{totalPresent}</div><div className="report-stat-lbl">Present</div></div>
+        <div className="report-stat"><div className="report-stat-val" style={{color:'var(--amber)'}}>{totalLate}</div><div className="report-stat-lbl">Late</div></div>
+        <div className="report-stat"><div className="report-stat-val" style={{color:'var(--red)'}}>{totalFlags}</div><div className="report-stat-lbl">AI Flags</div></div>
+        <div className="report-stat"><div className="report-stat-val" style={{color:'var(--green)'}}>{totalHours}h</div><div className="report-stat-lbl">Hours</div></div>
+      </div>
+
+      <div className="card">
+        <div className="card-title">Employee Summary</div>
+        {loading ? <div className="empty"><span className="spinner"/></div> :
+        employees.map(emp=>{
+          const empRecs  = records.filter(r=>r.employee_id===emp.id);
+          const present  = empRecs.filter(r=>r.status==='present'||r.status==='late').length;
+          const late     = empRecs.filter(r=>r.is_late).length;
+          const hours    = empRecs.reduce((s,r)=>s+(r.hours_worked||0),0).toFixed(1);
+          const initials = emp.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+          return (
+            <div key={emp.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderBottom:'1px solid var(--border)'}}>
+              <div className="avatar">{initials}</div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:600,fontSize:13}}>{emp.full_name}</div>
+                <div style={{fontSize:11,color:'var(--text3)'}}>{present} days · {hours}h</div>
+              </div>
+              <div style={{display:'flex',gap:6}}>
+                {late>0 && <span className="badge late">{late} late</span>}
+                <span className="badge present">{present}d</span>
+              </div>
+            </div>
+          );
+        })}
+        {employees.length===0 && <div className="empty"><div className="icon">📊</div>No data for this period.</div>}
+      </div>
+    </div>
+  );
+}
+
 // ── NAV CONFIG ────────────────────────────────────────────────
 const ADMIN_NAV = [
   { section:"Main",     items:[{id:"dashboard",icon:"🏠",label:"Dashboard"},{id:"clockin",icon:"📸",label:"Clock In / Out"}]},
-  { section:"Workforce",items:[{id:"attendance",icon:"📋",label:"Attendance"},{id:"overrides",icon:"📍",label:"GPS Overrides",badge:true}]},
+  { section:"Workforce",items:[{id:"attendance",icon:"📋",label:"Attendance"},{id:"overrides",icon:"📍",label:"GPS Overrides",badge:true},{id:"payroll",icon:"💰",label:"Payroll"},{id:"reports",icon:"📊",label:"Reports"}]},
+  { section:"Team",items:[{id:"employees",icon:"👥",label:"Employees"},{id:"addemployee",icon:"➕",label:"Add Employee"}]},
   { section:"System",   items:[{id:"settings",icon:"⚙️",label:"Settings"}]},
 ];
 const EMP_NAV = [
   { section:"Me", items:[{id:"clockin",icon:"📸",label:"Clock In / Out"},{id:"myrecord",icon:"📋",label:"My Record"}]},
 ];
-const PAGE_TITLES = { dashboard:"Dashboard Overview", clockin:"AI Check-In", employees:"Employees", attendance:"Attendance Records", overrides:"GPS Override Requests", settings:"System Settings", myrecord:"My Attendance" };
+const PAGE_TITLES = { dashboard:"Dashboard Overview", clockin:"AI Check-In", employees:"Employees", attendance:"Attendance Records", overrides:"GPS Override Requests", settings:"System Settings", myrecord:"My Attendance", profile:"My Profile", addemployee:"Add Employee", payroll:"Payroll", reports:"Reports" };
 
 // ── ROOT APP ──────────────────────────────────────────────────
 export default function App() {
@@ -1232,6 +1581,7 @@ export default function App() {
   const [clockIns, setClockIns]       = useState([]);
   const [settings, setSettings]       = useState(null);
   const [pendingOverrides, setPendingOverrides] = useState(0);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   // Auth listener
   useEffect(() => {
@@ -1311,8 +1661,12 @@ export default function App() {
       case "attendance": return <AttendanceScreen employees={employees} />;
       case "overrides":  return <OverridesScreen employee={employee} />;
       case "settings":   return <SettingsScreen settings={settings} onSettingsSaved={s=>setSettings(s)} />;
-      case "myrecord":   return <AttendanceScreen employees={[employee]} />;
-      default:           return <AdminDashboard employees={employees} clockIns={clockIns} />;
+      case "myrecord":     return <AttendanceScreen employees={[employee]} />;
+      case "profile":      return <ProfileScreen employee={employee} />;
+      case "addemployee":  return <AddEmployeeScreen onSuccess={()=>{ supabase.from('employees').select('*,departments(name),shifts(name,start_time,end_time,grace_mins)').eq('is_active',true).then(({data})=>setEmployees(data||[])); setPage('employees'); }} />;
+      case "payroll":      return <PayrollScreen employees={employees} />;
+      case "reports":      return <ReportsScreen employees={employees} />;
+      default:             return <AdminDashboard employees={employees} clockIns={clockIns} setPage={setPage} pendingOverrides={pendingOverrides} />;
     }
   };
 
@@ -1353,11 +1707,25 @@ export default function App() {
         </div>
 
         <div className="main">
-          <div className="topbar">
+          <div className="topbar" style={{position:'relative'}}>
             <button className="menu-toggle" onClick={()=>setSidebarOpen(o=>!o)}>☰</button>
             <div className="topbar-title">{PAGE_TITLES[page]||"AttendAI"}</div>
             <span className="topbar-time"><Clock /></span>
             <div className="topbar-dot" title="Supabase Connected" />
+            <button className="profile-btn" onClick={()=>setProfileOpen(o=>!o)}>
+              {employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
+            </button>
+            {profileOpen && (
+              <>
+                <div style={{position:'fixed',inset:0,zIndex:199}} onClick={()=>setProfileOpen(false)} />
+                <ProfileDropdown
+                  employee={employee}
+                  onLogout={()=>{ setProfileOpen(false); handleLogout(); }}
+                  onNavigate={(p)=>setPage(p)}
+                  onClose={()=>setProfileOpen(false)}
+                />
+              </>
+            )}
           </div>
           <div className="content">
             {renderPage()}
