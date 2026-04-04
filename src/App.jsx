@@ -368,40 +368,48 @@ function Clock() {
 }
 
 // ── LOGIN SCREEN ─────────────────────────────────────────────
-function LoginScreen({ onLogin }) {
+function LoginScreen({ onLogin, onSignUp }) {
   const [email, setEmail]     = useState("");
   const [pw, setPw]           = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
+  const [resetSent, setResetSent] = useState(false);
 
   const handleLogin = async () => {
     setError(""); setLoading(true);
     try {
       const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password: pw });
       if (authError) throw authError;
-
-      // Fetch employee profile
       const { data: emp, error: empError } = await supabase
-        .from("employees")
-        .select("*")
-        .eq("auth_user_id", data.user.id)
-        .maybeSingle();
-      if (empError || !emp) throw new Error("Employee profile not found. Contact admin.");
-
+        .from("employees").select("*")
+        .eq("auth_user_id", data.user.id).maybeSingle();
+      if (empError || !emp) throw new Error("Employee profile not found. Contact your admin.");
       onLogin(emp);
     } catch (e) {
       setError(e.message || "Login failed");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
+  };
+
+  const handleReset = async () => {
+    if (!email.trim()) { setError("Enter your email first."); return; }
+    setLoading(true);
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    setLoading(false);
+    if (resetErr) setError(resetErr.message);
+    else setResetSent(true);
   };
 
   return (
     <div className="login-wrap fade-in">
       <div className="login-card">
-        <div className="login-logo">Attend<span>AI</span></div>
-        <div className="login-sub">AI-Powered Workforce Attendance Platform</div>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div className="login-logo">Attend<span>AI</span></div>
+          <div className="login-sub">AI-Powered Workforce Attendance</div>
+        </div>
         {error && <div className="error-box">⚠ {error}</div>}
+        {resetSent && <div className="success-box">✓ Password reset email sent. Check your inbox.</div>}
         <div className="form-group">
           <label className="form-label">Email</label>
           <input className="form-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@company.com" />
@@ -410,11 +418,125 @@ function LoginScreen({ onLogin }) {
           <label className="form-label">Password</label>
           <input className="form-input" type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&handleLogin()} />
         </div>
-        <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={handleLogin} disabled={loading}>
+        <button className="btn btn-primary" style={{width:"100%",justifyContent:"center",padding:13,fontSize:15,marginBottom:12}} onClick={handleLogin} disabled={loading}>
           {loading ? <><span className="spinner"/>&nbsp;Signing in…</> : "Sign In →"}
         </button>
-        <div style={{textAlign:"center",marginTop:20,fontSize:12,color:"var(--text3)"}}>
+        <button className="btn btn-ghost" style={{width:"100%",justifyContent:"center",padding:13,fontSize:15,marginBottom:16}} onClick={onSignUp}>
+          New Employee? Sign Up
+        </button>
+        <div style={{textAlign:"center"}}>
+          <span style={{fontSize:12,color:"var(--primary)",cursor:"pointer",fontWeight:600}} onClick={handleReset}>
+            Forgot password?
+          </span>
+        </div>
+        <div style={{textAlign:"center",marginTop:16,fontSize:11,color:"var(--text3)"}}>
           AttendAI · Secured with Supabase Auth
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SIGN UP SCREEN ────────────────────────────────────────────
+function SignUpScreen({ onBack, onSignedUp }) {
+  const [step, setStep]       = useState("form"); // form | enrolled
+  const [form, setForm]       = useState({ full_name:"", email:"", pw:"", pw2:"", country_code:"+234", phone:"" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState("");
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const handleSignUp = async () => {
+    setError("");
+    if (!form.full_name.trim()) { setError("Please enter your full name."); return; }
+    if (!form.email.trim())     { setError("Please enter your email."); return; }
+    if (form.pw.length < 6)     { setError("Password must be at least 6 characters."); return; }
+    if (form.pw !== form.pw2)   { setError("Passwords do not match."); return; }
+    setLoading(true);
+    try {
+      // 1. Create auth account
+      const { data: authData, error: authErr } = await supabase.auth.signUp({
+        email: form.email.trim().toLowerCase(),
+        password: form.pw,
+      });
+      if (authErr) throw authErr;
+      const userId = authData.user?.id;
+      if (!userId) throw new Error("Signup failed. Please try again.");
+
+      // 2. Check if admin already created an employee record for this email
+      const { data: existing } = await supabase.from("employees")
+        .select("id").eq("email", form.email.trim().toLowerCase()).maybeSingle();
+
+      if (existing) {
+        // Link auth user to existing employee record
+        await supabase.from("employees").update({ auth_user_id: userId })
+          .eq("id", existing.id);
+      } else {
+        // Create new employee record (pending admin approval)
+        await supabase.from("employees").insert({
+          auth_user_id: userId,
+          full_name:    form.full_name.trim(),
+          email:        form.email.trim().toLowerCase(),
+          phone:        form.phone ? form.country_code + form.phone : null,
+          role:         "employee",
+          is_active:    true,
+          face_enrolled: false,
+        });
+      }
+
+      // 3. Sign in immediately
+      await supabase.auth.signInWithPassword({ email: form.email.trim().toLowerCase(), password: form.pw });
+
+      // 4. Fetch profile and proceed to face enrollment
+      const { data: emp } = await supabase.from("employees").select("*")
+        .eq("auth_user_id", userId).maybeSingle();
+      if (emp) onSignedUp(emp);
+    } catch(e) {
+      setError(e.message || "Signup failed.");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="login-wrap fade-in">
+      <div className="login-card" style={{maxWidth:420,width:"100%"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+          <button onClick={onBack} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"var(--text2)"}}>←</button>
+          <div>
+            <div className="login-logo" style={{fontSize:20}}>Attend<span>AI</span></div>
+            <div style={{fontSize:12,color:"var(--text2)"}}>Create your account</div>
+          </div>
+        </div>
+        {error && <div className="error-box">⚠ {error}</div>}
+        <div className="form-group">
+          <label className="form-label">Full Name *</label>
+          <input className="form-input" placeholder="Enter your full name" value={form.full_name} onChange={e=>set("full_name",e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Mobile Number</label>
+          <div className="phone-input-wrap">
+            <select className="phone-code-select" value={form.country_code} onChange={e=>set("country_code",e.target.value)}>
+              {WA_COUNTRIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
+            </select>
+            <input className="phone-number-input" placeholder="Enter mobile number" value={form.phone} onChange={e=>set("phone",e.target.value.replace(/\D/g,""))} />
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Email *</label>
+          <input className="form-input" type="email" placeholder="you@company.com" value={form.email} onChange={e=>set("email",e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Password *</label>
+          <input className="form-input" type="password" placeholder="Min. 6 characters" value={form.pw} onChange={e=>set("pw",e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Confirm Password *</label>
+          <input className="form-input" type="password" placeholder="Repeat password" value={form.pw2} onChange={e=>set("pw2",e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleSignUp()} />
+        </div>
+        <button className="btn btn-primary" style={{width:"100%",justifyContent:"center",padding:13,fontSize:15,marginBottom:12}} onClick={handleSignUp} disabled={loading}>
+          {loading ? <><span className="spinner"/>&nbsp;Creating Account…</> : "Create Account →"}
+        </button>
+        <div style={{textAlign:"center",fontSize:12,color:"var(--text3)"}}>
+          Already have an account?{" "}
+          <span style={{color:"var(--primary)",fontWeight:600,cursor:"pointer"}} onClick={onBack}>Sign In</span>
         </div>
       </div>
     </div>
@@ -1524,6 +1646,10 @@ function AddEmployeeScreen({ onSuccess }) {
     if (!form.email.trim())     { setError('Email is required.'); return; }
     setSaving(true); setError('');
     try {
+      // Try to send invite email (works if admin has service role, gracefully fails otherwise)
+      try {
+        await supabase.auth.admin?.inviteUserByEmail(form.email.trim().toLowerCase());
+      } catch(_){}
       const { error: dbErr } = await supabase.from('employees').insert({
         full_name:       form.full_name.trim(),
         email:           form.email.trim().toLowerCase(),
@@ -1809,10 +1935,11 @@ const PAGE_TITLES = { dashboard:"Dashboard Overview", clockin:"AI Check-In", emp
 
 // ── ROOT APP ──────────────────────────────────────────────────
 export default function App() {
-  const [authUser, setAuthUser]       = useState(null);  // Supabase auth session
+  const [authUser, setAuthUser]       = useState(null);
   const [sidebarOpen, setSidebarOpen]   = useState(false);
-  const [employee, setEmployee]       = useState(null);  // employees row
+  const [employee, setEmployee]       = useState(null);
   const [page, setPage]               = useState("clockin");
+  const [authScreen, setAuthScreen]   = useState("login"); // login | signup
   const [loading, setLoading]         = useState(true);
   const [employees, setEmployees]     = useState([]);
   const [clockIns, setClockIns]       = useState([]);
@@ -1875,7 +2002,26 @@ export default function App() {
   if (!authUser || !employee) return (
     <>
       <style>{FONTS}{CSS}</style>
-      <LoginScreen onLogin={emp => { setEmployee(emp); setAuthUser({id:emp.auth_user_id}); setPage(emp.role==="admin"||emp.role==="superadmin"?"dashboard":"clockin"); }} />
+      {authScreen === "signup" ? (
+        <SignUpScreen
+          onBack={() => setAuthScreen("login")}
+          onSignedUp={emp => {
+            setEmployee(emp);
+            setAuthUser({id: emp.auth_user_id});
+            setAuthScreen("login");
+            // Face enrollment will trigger automatically since face_enrolled is false
+          }}
+        />
+      ) : (
+        <LoginScreen
+          onLogin={emp => {
+            setEmployee(emp);
+            setAuthUser({id: emp.auth_user_id});
+            setPage(emp.role==="admin"||emp.role==="superadmin"?"dashboard":"clockin");
+          }}
+          onSignUp={() => setAuthScreen("signup")}
+        />
+      )}
     </>
   );
 
