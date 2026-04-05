@@ -2442,6 +2442,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen]   = useState(false);
   const [employee, setEmployee]       = useState(null);
   const [pageStack, setPageStack]     = useState(["clockin"]); // navigation stack
+  const [profileOpen, setProfileOpen] = useState(false);
   const [authScreen, setAuthScreen]   = useState("login");
 
   // Current page is always the top of the stack
@@ -2449,15 +2450,14 @@ export default function App() {
 
   // Navigate forward — pushes to stack
   const setPage = (newPage) => {
+    setProfileOpen(false);
+    setSidebarOpen(false);
     setPageStack(stack => {
-      // If already on this page, don't push again
       if (stack[stack.length-1] === newPage) return stack;
-      // Root pages reset the stack
       const rootPages = ["dashboard","clockin","attendance","employees","myrecord"];
       if (rootPages.includes(newPage)) return [newPage];
       return [...stack, newPage];
     });
-    setSidebarOpen(false);
   };
 
   // Go back one level in the stack
@@ -2472,7 +2472,6 @@ export default function App() {
   const [clockIns, setClockIns]       = useState([]);
   const [settings, setSettings]       = useState(null);
   const [pendingOverrides, setPendingOverrides] = useState(0);
-  const [profileOpen, setProfileOpen] = useState(false);
 
   // Auth listener
   useEffect(() => {
