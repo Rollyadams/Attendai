@@ -1475,16 +1475,52 @@ function ProfileDropdown({ employee, onLogout, onNavigate, onClose }) {
 }
 
 // ── ACCOUNT PAGE (SuperManage style) ─────────────────────────
-function AccountScreen({ employee, onNavigate, onLogout }) {
+function AccountScreen({ employee, onLogout, employees }) {
+  const [sub, setSub] = useState(null); // internal sub-page
   const initials = employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
   const isAdmin = employee.role==='admin'||employee.role==='superadmin';
 
-  const Item = ({icon, title, sub, dest, danger}) => (
-    <div className={`account-item${danger?' danger':''}`} onClick={()=>onNavigate(dest)}>
+  // Render sub-page if active
+  if (sub) {
+    const subTitles = {
+      editprofile:'Profile Details', pricing:'Pricing & Plans',
+      usermgmt:'User Management', empoptions:'Employee App Options',
+      shifts:'Work Shift Settings', businesses:'Business Management',
+      inactive:'Inactive Employees', departments:'Department Type',
+      invites:'Invites', notifSettings:'Notification Settings',
+      attendanceSettings:'Attendance Settings', payrollSettings:'Payroll Setting',
+      language:'Language', share:'Share App', privacy:'Privacy Policy',
+    };
+    const renderSub = () => {
+      if (sub==='editprofile')       return <ProfileScreen employee={employee} />;
+      if (sub==='pricing')           return <PricingScreen />;
+      if (sub==='usermgmt')          return <UserMgmtScreen />;
+      if (sub==='empoptions')        return <EmpOptionsScreen />;
+      if (sub==='shifts')            return <ShiftsScreen onAddNew={()=>setSub('addshift')} />;
+      if (sub==='addshift')          return <AddShiftScreen onSuccess={()=>setSub('shifts')} />;
+      if (sub==='businesses')        return <BusinessesScreen />;
+      if (sub==='inactive')          return <InactiveScreen employees={employees||[]} />;
+      if (sub==='departments')       return <DepartmentsScreen />;
+      if (sub==='invites')           return <InvitesScreen employees={employees||[]} />;
+      return <PlaceholderScreen title={subTitles[sub]||sub} />;
+    };
+    return (
+      <div className="fade-in">
+        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
+          <button onClick={()=>setSub(null)} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:'var(--text)',padding:'4px 8px',display:'flex',alignItems:'center',fontFamily:'var(--body)'}}>← Back</button>
+          <div style={{fontFamily:'var(--display)',fontSize:16,fontWeight:700}}>{subTitles[sub]||sub}</div>
+        </div>
+        {renderSub()}
+      </div>
+    );
+  }
+
+  const Item = ({ icon, title, sub: dest, subLabel }) => (
+    <div className="account-item" onClick={() => setSub(dest)}>
       <div className="account-item-icon">{icon}</div>
       <div className="account-item-info">
         <div className="account-item-title">{title}</div>
-        {sub && <div className="account-item-sub">{sub}</div>}
+        {subLabel && <div className="account-item-sub">{subLabel}</div>}
       </div>
       <div className="account-item-arrow">›</div>
     </div>
@@ -1508,42 +1544,42 @@ function AccountScreen({ employee, onNavigate, onLogout }) {
       </div>
 
       <Section title="Account">
-        <Item icon="✏️" title="Edit Profile" sub="Update your personal information" dest="editprofile" />
-        <Item icon="💎" title="Pricing & Plans" sub="View and upgrade your plan" dest="pricing" />
+        <Item icon="✏️" title="Edit Profile" sub="editprofile" subLabel="Update your personal information" />
+        <Item icon="💎" title="Pricing & Plans" sub="pricing" subLabel="View and upgrade your plan" />
       </Section>
 
       {isAdmin && (
         <Section title="Business Configuration">
-          <Item icon="👤" title="User Management" sub="Manage admin and supervisor roles" dest="usermgmt" />
-          <Item icon="📱" title="Employee App Options" sub="Control what employees can access" dest="empoptions" />
-          <Item icon="🕐" title="Work Shift Settings" sub="Create and manage work shifts" dest="shifts" />
-          <Item icon="🏢" title="Businesses" sub="Manage your organisations" dest="businesses" />
-          <Item icon="🚫" title="Inactive Employees" sub="View deactivated staff" dest="inactive" />
-          <Item icon="🗂️" title="Department" sub="Manage departments" dest="departments" />
-          <Item icon="✉️" title="Invites" sub="Pending employee invitations" dest="invites" />
+          <Item icon="👤" title="User Management" sub="usermgmt" subLabel="Premium features overview" />
+          <Item icon="📱" title="Employee App Options" sub="empoptions" subLabel="Control employee access" />
+          <Item icon="🕐" title="Work Shift Settings" sub="shifts" subLabel="Create and manage shifts" />
+          <Item icon="🏢" title="Businesses" sub="businesses" subLabel="Manage your organisations" />
+          <Item icon="🚫" title="Inactive Employees" sub="inactive" subLabel="View deactivated staff" />
+          <Item icon="🗂️" title="Department" sub="departments" subLabel="Manage departments" />
+          <Item icon="✉️" title="Invites" sub="invites" subLabel="Pending employee invitations" />
         </Section>
       )}
 
       <Section title="Notification Settings">
-        <Item icon="🔔" title="Notification Settings" sub="Manage your alerts" dest="notifSettings" />
+        <Item icon="🔔" title="Notification Settings" sub="notifSettings" subLabel="Manage your alerts" />
       </Section>
 
       {isAdmin && (
         <Section title="Attendance Settings">
-          <Item icon="📋" title="Attendance Settings" sub="Reminders, absent rules, editing restrictions" dest="attendanceSettings" />
+          <Item icon="📋" title="Attendance Settings" sub="attendanceSettings" subLabel="Reminders and rules" />
         </Section>
       )}
 
       {isAdmin && (
         <Section title="Payroll Setting">
-          <Item icon="💰" title="Payroll Settings" sub="Cycle dates and calculation rules" dest="payrollSettings" />
+          <Item icon="💰" title="Payroll Settings" sub="payrollSettings" subLabel="Cycle and calculation rules" />
         </Section>
       )}
 
       <Section title="Others">
-        <Item icon="🌐" title="Language" sub="English" dest="language" />
-        <Item icon="🔗" title="Share App" sub="Invite others to AttendAI" dest="share" />
-        <Item icon="📄" title="Privacy Policy" sub="Read our privacy policy" dest="privacy" />
+        <Item icon="🌐" title="Language" sub="language" subLabel="English" />
+        <Item icon="🔗" title="Share App" sub="share" subLabel="Invite others to AttendAI" />
+        <Item icon="📄" title="Privacy Policy" sub="privacy" subLabel="Read our privacy policy" />
         <div className="account-item danger" onClick={onLogout}>
           <div className="account-item-icon">🚪</div>
           <div className="account-item-info"><div className="account-item-title">Logout</div></div>
@@ -2572,7 +2608,7 @@ export default function App() {
       case "settings":   return <SettingsScreen settings={settings} onSettingsSaved={s=>setSettings(s)} />;
       case "myrecord":     return <AttendanceScreen employees={[employee]} />;
       case "profile":      return <ProfileScreen employee={employee} />;
-      case "account":      return <AccountScreen employee={employee} onNavigate={setPage} onLogout={handleLogout} />;
+      case "account":      return <AccountScreen employee={employee} onLogout={handleLogout} employees={employees} />;
       case "addshift":     return <AddShiftScreen onSuccess={()=>setPage("settings")} />;
       case "addemployee":  return <AddEmployeeScreen onSuccess={()=>{ supabase.from('employees').select('*,departments(name),shifts(name,start_time,end_time,grace_mins)').eq('is_active',true).then(({data})=>setEmployees(data||[])); setPage('employees'); }} />;
       case "payroll":      return <PayrollScreen employees={employees} />;
