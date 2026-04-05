@@ -2441,32 +2441,32 @@ export default function App() {
   const [authUser, setAuthUser]       = useState(null);
   const [sidebarOpen, setSidebarOpen]   = useState(false);
   const [employee, setEmployee]       = useState(null);
-  const [pageStack, setPageStack]     = useState(["clockin"]); // navigation stack
+  const [page, setPageState]          = useState("clockin");
+  const [prevPage, setPrevPage]       = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [authScreen, setAuthScreen]   = useState("login");
 
-  // Current page is always the top of the stack
-  const page = pageStack[pageStack.length - 1];
+  const ROOT_PAGES = ["dashboard","clockin","attendance","employees","myrecord"];
 
-  // Navigate forward — pushes to stack
   const setPage = (newPage) => {
     setProfileOpen(false);
     setSidebarOpen(false);
-    setPageStack(stack => {
-      if (stack[stack.length-1] === newPage) return stack;
-      const rootPages = ["dashboard","clockin","attendance","employees","myrecord"];
-      if (rootPages.includes(newPage)) return [newPage];
-      return [...stack, newPage];
-    });
+    if (ROOT_PAGES.includes(newPage)) {
+      setPrevPage(null);
+    } else {
+      setPrevPage(page);
+    }
+    setPageState(newPage);
   };
 
-  // Go back one level in the stack
   const goBack = () => {
-    setPageStack(stack => stack.length > 1 ? stack.slice(0,-1) : stack);
+    if (prevPage) {
+      setPageState(prevPage);
+      setPrevPage(null);
+    }
   };
 
-  // Can go back if stack has more than 1 page
-  const canGoBack = pageStack.length > 1;
+  const canGoBack = !!prevPage;
   const [loading, setLoading]         = useState(true);
   const [employees, setEmployees]     = useState([]);
   const [clockIns, setClockIns]       = useState([]);
@@ -2484,7 +2484,7 @@ export default function App() {
           .single();
         setEmployee(emp||null);
         setAuthUser(data.session.user);
-        if (emp?.role==="admin"||emp?.role==="superadmin") setPageStack(["dashboard"]); else setPageStack(["clockin"]);
+        if (emp?.role==="admin"||emp?.role==="superadmin") { setPageState("dashboard"); } else { setPageState("clockin"); } setPrevPage(null);
       }
       setLoading(false);
     });
@@ -2543,7 +2543,7 @@ export default function App() {
           onLogin={emp => {
             setEmployee(emp);
             setAuthUser({id: emp.auth_user_id});
-            setPageStack([emp.role==="admin"||emp.role==="superadmin"?"dashboard":"clockin"]);
+            setPageState(emp.role==="admin"||emp.role==="superadmin"?"dashboard":"clockin"); setPrevPage(null);
           }}
           onSignUp={() => setAuthScreen("signup")}
         />
