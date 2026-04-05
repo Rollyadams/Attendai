@@ -2441,8 +2441,32 @@ export default function App() {
   const [authUser, setAuthUser]       = useState(null);
   const [sidebarOpen, setSidebarOpen]   = useState(false);
   const [employee, setEmployee]       = useState(null);
-  const [page, setPage]               = useState("clockin");
-  const [authScreen, setAuthScreen]   = useState("login"); // login | signup
+  const [pageStack, setPageStack]     = useState(["clockin"]); // navigation stack
+  const [authScreen, setAuthScreen]   = useState("login");
+
+  // Current page is always the top of the stack
+  const page = pageStack[pageStack.length - 1];
+
+  // Navigate forward — pushes to stack
+  const setPage = (newPage) => {
+    setPageStack(stack => {
+      // If already on this page, don't push again
+      if (stack[stack.length-1] === newPage) return stack;
+      // Root pages reset the stack
+      const rootPages = ["dashboard","clockin","attendance","employees","myrecord"];
+      if (rootPages.includes(newPage)) return [newPage];
+      return [...stack, newPage];
+    });
+    setSidebarOpen(false);
+  };
+
+  // Go back one level in the stack
+  const goBack = () => {
+    setPageStack(stack => stack.length > 1 ? stack.slice(0,-1) : stack);
+  };
+
+  // Can go back if stack has more than 1 page
+  const canGoBack = pageStack.length > 1;
   const [loading, setLoading]         = useState(true);
   const [employees, setEmployees]     = useState([]);
   const [clockIns, setClockIns]       = useState([]);
@@ -2461,7 +2485,7 @@ export default function App() {
           .single();
         setEmployee(emp||null);
         setAuthUser(data.session.user);
-        if (emp?.role==="admin"||emp?.role==="superadmin") setPage("dashboard");
+        if (emp?.role==="admin"||emp?.role==="superadmin") setPageStack(["dashboard"]); else setPageStack(["clockin"]);
       }
       setLoading(false);
     });
@@ -2520,7 +2544,7 @@ export default function App() {
           onLogin={emp => {
             setEmployee(emp);
             setAuthUser({id: emp.auth_user_id});
-            setPage(emp.role==="admin"||emp.role==="superadmin"?"dashboard":"clockin");
+            setPageStack([emp.role==="admin"||emp.role==="superadmin"?"dashboard":"clockin"]);
           }}
           onSignUp={() => setAuthScreen("signup")}
         />
@@ -2596,7 +2620,11 @@ export default function App() {
 
         <div className="main">
           <div className="topbar" style={{position:'relative'}}>
-            <button className="menu-toggle" onClick={()=>setSidebarOpen(o=>!o)}>☰</button>
+            {canGoBack ? (
+              <button onClick={goBack} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:'var(--text)',padding:'4px 8px',display:'flex',alignItems:'center'}}>←</button>
+            ) : (
+              <button className="menu-toggle" onClick={()=>setSidebarOpen(o=>!o)}>☰</button>
+            )}
             <div className="topbar-title">{PAGE_TITLES[page]||"AttendAI"}</div>
             <span className="topbar-time"><Clock /></span>
             <div className="topbar-dot" title="Supabase Connected" />
