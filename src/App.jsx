@@ -287,6 +287,52 @@ body { background:var(--bg); color:var(--text); font-family:var(--body); }
 .account-item-arrow { color:var(--text3); font-size:14px; }
 .account-item.danger .account-item-title { color:var(--red); }
 .account-item.danger .account-item-icon { background:var(--red-dim); }
+
+/* PRICING */
+.plan-card { border:2px solid var(--border); border-radius:14px; padding:16px 12px; text-align:center; cursor:pointer; transition:all 0.15s; position:relative; background:white; flex:1; }
+.plan-card.selected { border-color:var(--primary); background:var(--primary-light); }
+.plan-badge { position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:var(--red); color:white; font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; white-space:nowrap; }
+.plan-price { font-family:var(--display); font-size:22px; font-weight:800; color:var(--text); }
+.plan-original { font-size:12px; color:var(--text3); text-decoration:line-through; }
+.plan-label { font-size:11px; color:var(--text2); margin-top:4px; font-weight:500; }
+
+/* FEATURE LIST */
+.feature-item { display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--border); font-size:14px; font-weight:500; }
+.feature-item:last-child { border-bottom:none; }
+.feature-check { width:24px; height:24px; border-radius:50%; background:var(--green); display:flex; align-items:center; justify-content:center; color:white; font-size:13px; flex-shrink:0; }
+
+/* SHIFT CARD */
+.shift-card { background:white; border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:10px; box-shadow:var(--shadow); }
+.shift-card-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.shift-active-badge { background:var(--green-dim); color:var(--green); font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; }
+.shift-days { font-size:12px; color:var(--text2); margin-bottom:8px; }
+.shift-time { font-size:15px; font-weight:700; color:var(--text); }
+.shift-actions { display:flex; gap:10px; }
+
+/* BUSINESS CARD */
+.biz-card { display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--border); }
+.biz-icon { width:42px; height:42px; border-radius:10px; background:var(--bg3); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; border:1px solid var(--border); }
+.biz-info { flex:1; }
+.biz-name { font-size:14px; font-weight:700; color:var(--primary); }
+.biz-type { font-size:12px; color:var(--text2); margin-top:2px; }
+
+/* DEPT ROW */
+.dept-row { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--border); font-size:14px; font-weight:600; }
+.dept-row:last-child { border-bottom:none; }
+
+/* CHECKBOX ITEM */
+.check-item { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--border); font-size:14px; font-weight:500; }
+.check-item:last-child { border-bottom:none; }
+.checkbox { width:24px; height:24px; border-radius:6px; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.12s; flex-shrink:0; }
+.checkbox.checked { background:var(--primary); border-color:var(--primary); color:white; }
+
+/* EMPTY STATE */
+.empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px; color:var(--text3); text-align:center; }
+.empty-state .es-icon { font-size:64px; margin-bottom:16px; opacity:0.4; }
+.empty-state .es-title { font-size:16px; font-weight:600; color:var(--text2); }
+
+/* FAB */
+.fab { position:fixed; bottom:90px; right:20px; width:52px; height:52px; border-radius:14px; background:var(--primary); color:white; font-size:24px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(26,86,219,0.4); z-index:50; }
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeIn 0.25s ease}
@@ -1431,112 +1477,569 @@ function ProfileDropdown({ employee, onLogout, onNavigate, onClose }) {
 // ── ACCOUNT PAGE (SuperManage style) ─────────────────────────
 function AccountScreen({ employee, onNavigate, onLogout }) {
   const initials = employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+  const isAdmin = employee.role==='admin'||employee.role==='superadmin';
+
+  const Item = ({icon, title, sub, page, danger}) => (
+    <div className={`account-item${danger?' danger':''}`} onClick={()=>onNavigate(page)}>
+      <div className="account-item-icon">{icon}</div>
+      <div className="account-item-info">
+        <div className="account-item-title">{title}</div>
+        {sub && <div className="account-item-sub">{sub}</div>}
+      </div>
+      <div className="account-item-arrow">›</div>
+    </div>
+  );
+
+  const Section = ({title, children}) => (
+    <div className="account-section">
+      <div className="account-section-title">{title}</div>
+      <div style={{borderRadius:12,overflow:'hidden',border:'1px solid var(--border)',boxShadow:'var(--shadow)',background:'white'}}>
+        {children}
+      </div>
+    </div>
+  );
+
   return (
     <div className="fade-in">
-      {/* Profile header */}
-      <div style={{background:'white',borderRadius:14,padding:'24px 16px',textAlign:'center',marginBottom:16,boxShadow:'var(--shadow)',border:'1px solid var(--border)'}}>
-        <div style={{width:68,height:68,borderRadius:'50%',background:'var(--primary)',color:'white',fontSize:24,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 10px'}}>{initials}</div>
-        <div style={{fontFamily:'var(--display)',fontSize:18,fontWeight:800}}>{employee.full_name}</div>
-        <div style={{fontSize:12,color:'var(--primary)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px',marginTop:3}}>{employee.role}</div>
-        <div style={{fontSize:12,color:'var(--text3)',marginTop:4}}>{employee.email}</div>
+      <div style={{background:'white',borderRadius:14,padding:'20px 16px',textAlign:'center',marginBottom:12,boxShadow:'var(--shadow)',border:'1px solid var(--border)'}}>
+        <div style={{width:64,height:64,borderRadius:'50%',background:'var(--primary)',color:'white',fontSize:22,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 10px'}}>{initials}</div>
+        <div style={{fontFamily:'var(--display)',fontSize:17,fontWeight:800}}>{employee.full_name}</div>
+        <div style={{fontSize:11,color:'var(--primary)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px',marginTop:3}}>{employee.role}</div>
       </div>
 
-      {/* Account section */}
-      <div className="account-section">
-        <div className="account-section-title">Account</div>
-        <div style={{borderRadius:12,overflow:'hidden',border:'1px solid var(--border)',boxShadow:'var(--shadow)'}}>
-          <div className="account-item" onClick={()=>onNavigate('profile')}>
-            <div className="account-item-icon">✏️</div>
-            <div className="account-item-info"><div className="account-item-title">Edit Profile</div><div className="account-item-sub">Update your personal information</div></div>
-            <div className="account-item-arrow">›</div>
-          </div>
-          <div className="account-item" onClick={()=>onNavigate('settings')}>
-            <div className="account-item-icon">⚙️</div>
-            <div className="account-item-info"><div className="account-item-title">App Settings</div><div className="account-item-sub">GPS fence, shift times, deductions</div></div>
-            <div className="account-item-arrow">›</div>
-          </div>
-        </div>
-      </div>
+      <Section title="Account">
+        <Item icon="✏️" title="Edit Profile" sub="Update your personal information" page="editprofile" />
+        <Item icon="💎" title="Pricing & Plans" sub="View and upgrade your plan" page="pricing" />
+      </Section>
 
-      {(employee.role==='admin'||employee.role==='superadmin') && (
-        <div className="account-section">
-          <div className="account-section-title">Business Configuration</div>
-          <div style={{borderRadius:12,overflow:'hidden',border:'1px solid var(--border)',boxShadow:'var(--shadow)'}}>
-            <div className="account-item" onClick={()=>onNavigate('employees')}>
-              <div className="account-item-icon">👥</div>
-              <div className="account-item-info"><div className="account-item-title">Employee Management</div><div className="account-item-sub">View and manage all staff</div></div>
-              <div className="account-item-arrow">›</div>
-            </div>
-            <div className="account-item" onClick={()=>onNavigate('addemployee')}>
-              <div className="account-item-icon">➕</div>
-              <div className="account-item-info"><div className="account-item-title">Add Employee</div><div className="account-item-sub">Register a new staff member</div></div>
-              <div className="account-item-arrow">›</div>
-            </div>
-            <div className="account-item" onClick={()=>onNavigate('addshift')}>
-              <div className="account-item-icon">🕐</div>
-              <div className="account-item-info"><div className="account-item-title">Work Shift Settings</div><div className="account-item-sub">Create and manage work shifts</div></div>
-              <div className="account-item-arrow">›</div>
-            </div>
-            <div className="account-item" onClick={()=>onNavigate('overrides')}>
-              <div className="account-item-icon">📍</div>
-              <div className="account-item-info"><div className="account-item-title">GPS Override Requests</div><div className="account-item-sub">Review pending location approvals</div></div>
-              <div className="account-item-arrow">›</div>
-            </div>
-            <div className="account-item" onClick={()=>onNavigate('payroll')}>
-              <div className="account-item-icon">💰</div>
-              <div className="account-item-info"><div className="account-item-title">Payroll</div><div className="account-item-sub">Monthly payslips and deductions</div></div>
-              <div className="account-item-arrow">›</div>
-            </div>
-            <div className="account-item" onClick={()=>onNavigate('reports')}>
-              <div className="account-item-icon">📊</div>
-              <div className="account-item-info"><div className="account-item-title">Reports</div><div className="account-item-sub">Attendance and payroll summaries</div></div>
-              <div className="account-item-arrow">›</div>
-            </div>
-          </div>
-        </div>
+      {isAdmin && (
+        <Section title="Business Configuration">
+          <Item icon="👤" title="User Management" sub="Manage admin and supervisor roles" page="usermgmt" />
+          <Item icon="📱" title="Employee App Options" sub="Control what employees can access" page="empoptions" />
+          <Item icon="🕐" title="Work Shift Settings" sub="Create and manage work shifts" page="shifts" />
+          <Item icon="🏢" title="Businesses" sub="Manage your organisations" page="businesses" />
+          <Item icon="🚫" title="Inactive Employees" sub="View deactivated staff" page="inactive" />
+          <Item icon="🗂️" title="Department" sub="Manage departments" page="departments" />
+          <Item icon="✉️" title="Invites" sub="Pending employee invitations" page="invites" />
+        </Section>
       )}
 
-      <div className="account-section">
-        <div className="account-section-title">Other</div>
-        <div style={{borderRadius:12,overflow:'hidden',border:'1px solid var(--border)',boxShadow:'var(--shadow)'}}>
-          <div className="account-item danger" onClick={onLogout}>
-            <div className="account-item-icon">🚪</div>
-            <div className="account-item-info"><div className="account-item-title">Sign Out</div><div className="account-item-sub">Log out of your account</div></div>
-            <div className="account-item-arrow">›</div>
-          </div>
+      <Section title="Notification Settings">
+        <Item icon="🔔" title="Notification Settings" sub="Manage your alerts" page="notifSettings" />
+      </Section>
+
+      {isAdmin && (
+        <Section title="Attendance Settings">
+          <Item icon="📋" title="Attendance Settings" sub="Reminders, absent rules, editing restrictions" page="attendanceSettings" />
+        </Section>
+      )}
+
+      {isAdmin && (
+        <Section title="Payroll Setting">
+          <Item icon="💰" title="Payroll Settings" sub="Cycle dates and calculation rules" page="payrollSettings" />
+        </Section>
+      )}
+
+      <Section title="Others">
+        <Item icon="🌐" title="Language" sub="English" page="language" />
+        <Item icon="🔗" title="Share App" sub="Invite others to AttendAI" page="share" />
+        <Item icon="📄" title="Privacy Policy" sub="Read our privacy policy" page="privacy" />
+        <div className="account-item danger" onClick={onLogout}>
+          <div className="account-item-icon">🚪</div>
+          <div className="account-item-info"><div className="account-item-title">Logout</div></div>
+          <div className="account-item-arrow">›</div>
         </div>
+      </Section>
+
+      <div style={{textAlign:'center',padding:'16px 0 8px',fontSize:11,color:'var(--text3)'}}>
+        AttendAI v1.0.0
       </div>
     </div>
   );
 }
 
-// ── PROFILE EDIT PAGE ─────────────────────────────────────────
-function ProfileScreen({ employee }) {
-  const initials = employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+// ── EDIT PROFILE PAGE ────────────────────────────────────────
+function ProfileScreen({ employee, onSaved }) {
+  const [form, setForm] = useState({
+    full_name: employee.full_name,
+    phone:     employee.phone||'',
+    country_code: '+234',
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved,  setSaved]  = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const initials = form.full_name.split(' ').filter(Boolean).map(n=>n[0]).join('').slice(0,2).toUpperCase();
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase.from('employees').update({
+      full_name: form.full_name.trim(),
+      phone:     form.phone ? form.country_code+form.phone : null,
+    }).eq('id', employee.id);
+    setSaving(false);
+    if (!error) { setSaved(true); setTimeout(()=>setSaved(false),2500); }
+  };
+
   return (
     <div className="fade-in">
-      <div className="card" style={{textAlign:'center',padding:'24px 16px',marginBottom:14}}>
-        <div style={{width:68,height:68,borderRadius:'50%',background:'var(--primary)',color:'white',fontSize:24,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 10px'}}>{initials}</div>
-        <div style={{fontFamily:'var(--display)',fontSize:18,fontWeight:800}}>{employee.full_name}</div>
-        <div style={{fontSize:12,color:'var(--primary)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px',marginTop:3}}>{employee.role}</div>
+      <div style={{textAlign:'center',padding:'20px 0 16px'}}>
+        <div style={{width:64,height:64,borderRadius:'50%',background:'var(--primary)',color:'white',fontSize:22,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 8px'}}>{initials||'?'}</div>
       </div>
-      <div className="card">
-        <div className="card-title">Account Details</div>
-        {[
-          {label:'Full Name',  value:employee.full_name},
-          {label:'Email',      value:employee.email},
-          {label:'Phone',      value:employee.phone||'—'},
-          {label:'Role',       value:employee.role},
-          {label:'Department', value:employee.departments?.name||'—'},
-          {label:'Shift',      value:employee.shifts?.name||'Default'},
-          {label:'GPS Policy', value:employee.gps_policy==='office_only'?'Office Only':employee.gps_policy==='remote_allowed'?'Remote Allowed':'Hybrid'},
-          {label:'Face ID',    value:employee.face_enrolled?'✓ Enrolled':'Not enrolled'},
-        ].map(r=>(
-          <div key={r.label} style={{display:'flex',justifyContent:'space-between',padding:'11px 0',borderBottom:'1px solid var(--border)',fontSize:13}}>
-            <span style={{color:'var(--text2)',fontWeight:500}}>{r.label}</span>
-            <span style={{fontWeight:600,color:'var(--text)',textAlign:'right',maxWidth:'60%'}}>{r.value}</span>
+      {saved && <div className="success-box">✓ Profile updated successfully.</div>}
+      <div className="card" style={{marginBottom:12}}>
+        <div className="form-group">
+          <label className="form-label">Full Name</label>
+          <input className="form-input" value={form.full_name} onChange={e=>set('full_name',e.target.value)} placeholder="Your full name" />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Email ID</label>
+          <div style={{position:'relative'}}>
+            <input className="form-input" value={employee.email} readOnly style={{background:'var(--bg3)',paddingRight:40,color:'var(--text2)'}} />
+            <span style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',color:'var(--green)',fontSize:18}}>✓</span>
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Country</label>
+          <select className="form-select" value={form.country_code} onChange={e=>set('country_code',e.target.value)}>
+            {WA_COUNTRIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.name}</option>)}
+          </select>
+        </div>
+        <div className="form-group" style={{marginBottom:0}}>
+          <label className="form-label">Mobile Number</label>
+          <div className="phone-input-wrap">
+            <select className="phone-code-select" value={form.country_code} onChange={e=>set('country_code',e.target.value)}>
+              {WA_COUNTRIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
+            </select>
+            <input className="phone-number-input" placeholder="Enter mobile number" value={form.phone} onChange={e=>set('phone',e.target.value.replace(/\D/g,''))} />
+          </div>
+        </div>
+      </div>
+
+      <div style={{borderRadius:12,overflow:'hidden',border:'1px solid var(--border)',background:'white',marginBottom:20}}>
+        <div className="account-item danger" onClick={()=>setShowDelete(true)}>
+          <div className="account-item-icon">🗑️</div>
+          <div className="account-item-info"><div className="account-item-title">Delete Account</div></div>
+          <div className="account-item-arrow">›</div>
+        </div>
+      </div>
+
+      {showDelete && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',z:200,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div style={{background:'white',borderRadius:16,padding:24,width:'100%',maxWidth:320,textAlign:'center'}}>
+            <div style={{fontSize:40,marginBottom:12}}>⚠️</div>
+            <div style={{fontFamily:'var(--display)',fontSize:17,fontWeight:800,marginBottom:8}}>Delete Account?</div>
+            <div style={{fontSize:13,color:'var(--text2)',marginBottom:20}}>This action cannot be undone. All your data will be permanently removed.</div>
+            <div style={{display:'flex',gap:10}}>
+              <button className="btn btn-ghost" style={{flex:1,justifyContent:'center'}} onClick={()=>setShowDelete(false)}>Cancel</button>
+              <button className="btn btn-danger" style={{flex:1,justifyContent:'center'}}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',padding:14,fontSize:15}} onClick={handleSave} disabled={saving}>
+        {saving ? <><span className="spinner"/>&nbsp;Saving…</> : 'Continue'}
+      </button>
+    </div>
+  );
+}
+
+// ── PRICING & PLANS ───────────────────────────────────────────
+function PricingScreen() {
+  const [selected, setSelected] = useState('quarterly');
+  const [form, setForm] = useState({ company:'', phone:'', address:'', state:'', coupon:'' });
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const plans = [
+    { id:'quarterly', label:'Quarterly Plan', price:'₦120,000',  original:null,        discount:null },
+    { id:'yearly',    label:'Yearly Plan',    price:'₦384,000',  original:'₦480,000',  discount:'20% OFF' },
+    { id:'threeyear', label:'3 Yearly Plan',  price:'₦1,008,000',original:'₦1,440,000',discount:'30% OFF' },
+  ];
+  const cur = plans.find(p=>p.id===selected);
+
+  return (
+    <div className="fade-in">
+      {/* Plan selector */}
+      <div style={{display:'flex',gap:8,marginBottom:20}}>
+        {plans.map(p=>(
+          <div key={p.id} className={`plan-card ${selected===p.id?'selected':''}`} onClick={()=>setSelected(p.id)}>
+            {p.discount && <div className="plan-badge">{p.discount}</div>}
+            {p.original && <div className="plan-original">{p.original}</div>}
+            <div className="plan-price">{p.price}</div>
+            <div className="plan-label">{p.label}</div>
           </div>
         ))}
+      </div>
+
+      <div style={{marginBottom:16}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,color:'var(--primary)',fontWeight:600,fontSize:13,marginBottom:16}}>
+          📋 View All Plan Features
+        </div>
+
+        <div style={{fontFamily:'var(--display)',fontSize:15,fontWeight:700,marginBottom:12}}>Contact Detail</div>
+        <div className="form-group">
+          <input className="form-input" placeholder="Company Name *" value={form.company} onChange={e=>set('company',e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Mobile Number</label>
+          <div className="phone-input-wrap">
+            <select className="phone-code-select"><option>🇳🇬 +234</option></select>
+            <input className="phone-number-input" placeholder="Enter mobile number" value={form.phone} onChange={e=>set('phone',e.target.value)} />
+          </div>
+        </div>
+        <div className="form-group">
+          <input className="form-input" placeholder="Email ID (Optional)" value={form.email||''} onChange={e=>set('email',e.target.value)} />
+        </div>
+
+        <div style={{fontFamily:'var(--display)',fontSize:15,fontWeight:700,margin:'16px 0 12px'}}>Billing Address</div>
+        <div className="form-group"><input className="form-input" placeholder="Address" value={form.address} onChange={e=>set('address',e.target.value)} /></div>
+        <div className="form-group"><input className="form-input" placeholder="Country" defaultValue="Nigeria" /></div>
+        <div className="form-group"><input className="form-input" placeholder="State / Province" value={form.state} onChange={e=>set('state',e.target.value)} /></div>
+
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+          <div style={{fontFamily:'var(--display)',fontSize:15,fontWeight:700}}>Coupons</div>
+          <span style={{color:'var(--primary)',fontSize:12,fontWeight:600}}>View All</span>
+        </div>
+        <div style={{fontSize:13,color:'var(--text2)',marginBottom:8}}>Have a coupon code?</div>
+        <div style={{display:'flex',gap:10,marginBottom:20}}>
+          <input className="form-input" placeholder="Enter coupon code" style={{flex:1}} value={form.coupon} onChange={e=>set('coupon',e.target.value)} />
+          <button className="btn btn-primary" style={{padding:'11px 18px'}}>Apply</button>
+        </div>
+
+        <div style={{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:12,padding:16,marginBottom:20}}>
+          <div style={{fontFamily:'var(--display)',fontSize:14,fontWeight:700,marginBottom:12}}>Purchase Summary</div>
+          <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border)',fontSize:13}}>
+            <span>Base Price</span><span style={{fontWeight:600}}>{cur.price}</span>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',padding:'10px 0 0',fontSize:14,fontWeight:700}}>
+            <span>Total Amount:</span><span style={{color:'var(--primary)'}}>{cur.price}</span>
+          </div>
+        </div>
+        <div style={{fontSize:11,color:'var(--text3)',textAlign:'center',marginBottom:16}}>
+          By continuing, you agree to our <span style={{color:'var(--primary)'}}>T&C</span> and <span style={{color:'var(--primary)'}}>Privacy Policy</span>
+        </div>
+      </div>
+
+      <div style={{position:'sticky',bottom:70,background:'white',padding:'10px 0',borderTop:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <div>
+          <div style={{fontSize:11,color:'var(--text3)'}}>Total Amount:</div>
+          <div style={{fontFamily:'var(--display)',fontSize:18,fontWeight:800,color:'var(--primary)'}}>{cur.price}</div>
+        </div>
+        <button className="btn btn-primary" style={{padding:'12px 24px',fontSize:14}}>Continue to Payment</button>
+      </div>
+    </div>
+  );
+}
+
+// ── USER MANAGEMENT (Premium Features) ───────────────────────
+function UserMgmtScreen() {
+  const features = [
+    'Desktop Access','Cashbook Access','Fine Access','Vehicle Management Access',
+    'User Management Access','Employee Documents Access','Payslip Access',
+    'Punch In/Out Access','Employee App','Inventory Management Access',
+    'Expense Management','Advance Access','CRM Lite','Add Employees','Business Broadcast',
+  ];
+  return (
+    <div className="fade-in">
+      <div style={{background:'linear-gradient(160deg,#EBF0FF,#E0ECFF)',borderRadius:14,padding:20,textAlign:'center',marginBottom:20,border:'1px solid var(--border)'}}>
+        <div style={{width:64,height:64,borderRadius:'50%',background:'var(--primary)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px',fontSize:28}}>💎</div>
+        <div style={{fontFamily:'var(--display)',fontSize:17,fontWeight:800,marginBottom:6}}>AttendAI Premium</div>
+        <div style={{fontSize:13,color:'var(--text2)',lineHeight:1.5}}>Get 7 days free access to our premium features and explore how AttendAI simplifies your business operations</div>
+      </div>
+      <div style={{fontFamily:'var(--display)',fontSize:15,fontWeight:700,marginBottom:12}}>Our premium features</div>
+      <div className="card" style={{marginBottom:20}}>
+        {features.map(f=>(
+          <div key={f} className="feature-item">
+            <div className="feature-check">✓</div>
+            <span>{f}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{display:'flex',gap:10,paddingBottom:20}}>
+        <button className="btn btn-ghost" style={{flex:1,justifyContent:'center',padding:14}}>View All Plans</button>
+        <button className="btn btn-primary" style={{flex:1,justifyContent:'center',padding:14}}>Start 7 Days Trial</button>
+      </div>
+    </div>
+  );
+}
+
+// ── EMPLOYEE APP OPTIONS ──────────────────────────────────────
+function EmpOptionsScreen({ settings, onSaved }) {
+  const [opts, setOpts] = useState({
+    overtime:true, business_expense:true, approve_expense:false,
+    vehicle_mgmt:true, payroll:false, leave:false, holidays:false, attendance:false,
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved,  setSaved]  = useState(false);
+  const toggle = k => setOpts(o=>({...o,[k]:!o[k]}));
+
+  const items = [
+    {key:'overtime',        label:'OverTime'},
+    {key:'business_expense',label:'Business Expense'},
+    {key:'approve_expense', label:'Approve Expense'},
+    {key:'vehicle_mgmt',    label:'Vehicle Management'},
+    {key:'payroll',         label:'Payroll'},
+    {key:'leave',           label:'Leave'},
+    {key:'holidays',        label:'Holidays'},
+    {key:'attendance',      label:'Attendance'},
+  ];
+
+  const handleSave = async () => {
+    setSaving(true);
+    await supabase.from('app_settings').update({ emp_options: opts }).eq('id',1);
+    setSaving(false); setSaved(true); setTimeout(()=>setSaved(false),2000);
+  };
+
+  return (
+    <div className="fade-in">
+      {saved && <div className="success-box">✓ Employee app options saved.</div>}
+      <div className="card" style={{marginBottom:20}}>
+        {items.map(item=>(
+          <div key={item.key} className="check-item">
+            <span style={{color:opts[item.key]?'var(--text)':'var(--text3)'}}>{item.label}</span>
+            <div className={`checkbox ${opts[item.key]?'checked':''}`} onClick={()=>toggle(item.key)}>
+              {opts[item.key] && '✓'}
+            </div>
+          </div>
+        ))}
+      </div>
+      <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',padding:14,fontSize:15}} onClick={handleSave} disabled={saving}>
+        {saving ? <><span className="spinner"/>&nbsp;Saving…</> : 'Save'}
+      </button>
+    </div>
+  );
+}
+
+// ── WORK SHIFTS SCREEN ────────────────────────────────────────
+function ShiftsScreen({ onAddNew }) {
+  const [shifts, setShifts]   = useState([]);
+  const [search, setSearch]   = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    supabase.from('shifts').select('*').order('name').then(({data})=>{ setShifts(data||[]); setLoading(false); });
+  };
+  useEffect(()=>load(),[]);
+
+  const deleteShift = async (id) => {
+    await supabase.from('shifts').delete().eq('id',id);
+    load();
+  };
+
+  const filtered = shifts.filter(s=>s.name.toLowerCase().includes(search.toLowerCase()));
+
+  const fmt = t => {
+    if (!t) return '';
+    const [h,m] = t.split(':').map(Number);
+    const ampm = h>=12?'PM':'AM';
+    return `${((h%12)||12).toString().padStart(2,'0')}:${m.toString().padStart(2,'0')} ${ampm}`;
+  };
+
+  return (
+    <div className="fade-in">
+      <div className="search-bar" style={{marginBottom:16}}>
+        <span>🔍</span>
+        <input placeholder="Search Employee Shifts" value={search} onChange={e=>setSearch(e.target.value)} />
+      </div>
+      {loading ? <div className="empty"><span className="spinner"/></div> :
+       filtered.length===0 ? (
+         <div className="empty-state"><div className="es-icon">🕐</div><div className="es-title">No shifts found</div></div>
+       ) : filtered.map(s=>(
+        <div key={s.id} className="shift-card">
+          <div className="shift-card-top">
+            <div style={{fontFamily:'var(--display)',fontSize:15,fontWeight:700}}>{s.name}</div>
+            <span className="shift-active-badge">Active</span>
+          </div>
+          <div className="shift-days">Mon, Tue, Wed, Thu, Fri</div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div className="shift-time">{fmt(s.start_time)} – {fmt(s.end_time)}</div>
+            <div className="shift-actions">
+              <button className="btn btn-ghost" style={{padding:'6px 10px',fontSize:13}} onClick={()=>{}}>✏️</button>
+              <button className="btn btn-danger" style={{padding:'6px 10px',fontSize:13}} onClick={()=>deleteShift(s.id)}>🗑️</button>
+            </div>
+          </div>
+        </div>
+      ))}
+      <button className="fab" onClick={onAddNew}>+</button>
+    </div>
+  );
+}
+
+// ── BUSINESSES SCREEN ─────────────────────────────────────────
+function BusinessesScreen() {
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm]       = useState({name:'', industry:''});
+  const [businesses, setBusinesses] = useState([
+    {id:1, name:'My Company', industry:'Technology'},
+  ]);
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const add = () => {
+    if (!form.name.trim()) return;
+    setBusinesses(b=>[...b,{id:Date.now(),...form}]);
+    setForm({name:'',industry:''}); setShowAdd(false);
+  };
+
+  return (
+    <div className="fade-in">
+      <div style={{color:'var(--primary)',fontWeight:600,fontSize:14,marginBottom:16,display:'flex',alignItems:'center',gap:6,cursor:'pointer'}} onClick={()=>setShowAdd(true)}>
+        + Add new business
+      </div>
+      <div style={{borderBottom:'1px solid var(--border)'}} />
+      <div style={{marginTop:8}}>
+        {businesses.map(b=>(
+          <div key={b.id} className="biz-card">
+            <div className="biz-icon">🏢</div>
+            <div className="biz-info">
+              <div className="biz-name">{b.name}</div>
+              <div className="biz-type">{b.industry}</div>
+            </div>
+            <div style={{color:'var(--text3)',fontSize:20,cursor:'pointer'}}>···</div>
+          </div>
+        ))}
+      </div>
+
+      {showAdd && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:200,display:'flex',alignItems:'flex-end'}}>
+          <div style={{background:'white',borderRadius:'20px 20px 0 0',padding:24,width:'100%'}}>
+            <div style={{fontFamily:'var(--display)',fontSize:16,fontWeight:800,marginBottom:16}}>Add New Business</div>
+            <div className="form-group">
+              <label className="form-label">Business Name *</label>
+              <input className="form-input" placeholder="e.g. Tech World Ltd" value={form.name} onChange={e=>set('name',e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Industry</label>
+              <input className="form-input" placeholder="e.g. Information Technology" value={form.industry} onChange={e=>set('industry',e.target.value)} />
+            </div>
+            <div style={{display:'flex',gap:10}}>
+              <button className="btn btn-ghost" style={{flex:1,justifyContent:'center'}} onClick={()=>setShowAdd(false)}>Cancel</button>
+              <button className="btn btn-primary" style={{flex:1,justifyContent:'center'}} onClick={add}>Add</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── INACTIVE EMPLOYEES ────────────────────────────────────────
+function InactiveScreen({ employees }) {
+  const inactive = employees.filter(e=>!e.is_active);
+  return (
+    <div className="fade-in">
+      {inactive.length===0 ? (
+        <div className="empty-state">
+          <div className="es-icon">👤</div>
+          <div className="es-title">No Inactive Employees</div>
+        </div>
+      ) : inactive.map(e=>(
+        <div key={e.id} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 0',borderBottom:'1px solid var(--border)'}}>
+          <div className="avatar">{e.full_name.slice(0,2).toUpperCase()}</div>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:600,fontSize:13}}>{e.full_name}</div>
+            <div style={{fontSize:11,color:'var(--text3)'}}>{e.email}</div>
+          </div>
+          <button className="btn btn-ghost" style={{fontSize:11,padding:'5px 10px'}}>Reactivate</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── DEPARTMENTS SCREEN ────────────────────────────────────────
+function DepartmentsScreen() {
+  const [depts, setDepts]     = useState([]);
+  const [search, setSearch]   = useState('');
+  const [showAdd, setShowAdd] = useState(false);
+  const [newDept, setNewDept] = useState('');
+
+  const load = () => supabase.from('departments').select('*').order('name').then(({data})=>setDepts(data||[]));
+  useEffect(()=>load(),[]);
+
+  const add = async () => {
+    if (!newDept.trim()) return;
+    await supabase.from('departments').insert({name:newDept.trim()});
+    setNewDept(''); setShowAdd(false); load();
+  };
+
+  const del = async (id) => {
+    await supabase.from('departments').delete().eq('id',id);
+    load();
+  };
+
+  const filtered = depts.filter(d=>d.name.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="fade-in">
+      <div className="search-bar" style={{marginBottom:16}}>
+        <span>🔍</span>
+        <input placeholder="Search Department" value={search} onChange={e=>setSearch(e.target.value)} />
+      </div>
+      <div className="card">
+        {filtered.length===0 ? <div className="empty-state"><div className="es-icon">🗂️</div><div className="es-title">No departments</div></div> :
+         filtered.map(d=>(
+          <div key={d.id} className="dept-row">
+            <span>{d.name}</span>
+            <span style={{color:'var(--text3)',fontSize:18,cursor:'pointer'}} onClick={()=>del(d.id)}>···</span>
+          </div>
+        ))}
+      </div>
+
+      {showAdd && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:200,display:'flex',alignItems:'flex-end'}}>
+          <div style={{background:'white',borderRadius:'20px 20px 0 0',padding:24,width:'100%'}}>
+            <div style={{fontFamily:'var(--display)',fontSize:16,fontWeight:800,marginBottom:16}}>Add Department</div>
+            <div className="form-group">
+              <label className="form-label">Department Name</label>
+              <input className="form-input" placeholder="e.g. Marketing" value={newDept} onChange={e=>setNewDept(e.target.value)} onKeyDown={e=>e.key==='Enter'&&add()} />
+            </div>
+            <div style={{display:'flex',gap:10}}>
+              <button className="btn btn-ghost" style={{flex:1,justifyContent:'center'}} onClick={()=>setShowAdd(false)}>Cancel</button>
+              <button className="btn btn-primary" style={{flex:1,justifyContent:'center'}} onClick={add}>Add</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <button className="fab" onClick={()=>setShowAdd(true)}>+</button>
+    </div>
+  );
+}
+
+// ── INVITES SCREEN ────────────────────────────────────────────
+function InvitesScreen({ employees }) {
+  // Employees with no auth_user_id haven't accepted invite yet
+  const pending = employees.filter(e=>!e.auth_user_id);
+  return (
+    <div className="fade-in">
+      {pending.length===0 ? (
+        <div className="empty-state">
+          <div className="es-icon">✉️</div>
+          <div className="es-title">No Pending Invites</div>
+        </div>
+      ) : pending.map(e=>(
+        <div key={e.id} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 0',borderBottom:'1px solid var(--border)'}}>
+          <div className="avatar">{e.full_name.slice(0,2).toUpperCase()}</div>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:600,fontSize:13}}>{e.full_name}</div>
+            <div style={{fontSize:11,color:'var(--text3)'}}>{e.email}</div>
+          </div>
+          <span className="badge late">Pending</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── PLACEHOLDER SCREEN ────────────────────────────────────────
+function PlaceholderScreen({ title }) {
+  return (
+    <div className="fade-in">
+      <div className="empty-state">
+        <div className="es-icon">🚧</div>
+        <div className="es-title">{title}</div>
+        <div style={{fontSize:13,color:'var(--text3)',marginTop:8}}>Coming soon</div>
       </div>
     </div>
   );
@@ -1931,7 +2434,7 @@ const ADMIN_NAV = [
 const EMP_NAV = [
   { section:"Me", items:[{id:"clockin",icon:"📸",label:"Clock In / Out"},{id:"myrecord",icon:"📋",label:"My Record"}]},
 ];
-const PAGE_TITLES = { dashboard:"Dashboard Overview", clockin:"AI Check-In", employees:"Employees", attendance:"Attendance Records", overrides:"GPS Override Requests", settings:"System Settings", myrecord:"My Attendance", profile:"My Profile", account:"My Account", addemployee:"Add Employee", addshift:"Add Shift", payroll:"Payroll", reports:"Reports" };
+const PAGE_TITLES = { dashboard:"Dashboard Overview", clockin:"AI Check-In", employees:"Employees", attendance:"Attendance Records", overrides:"GPS Override Requests", settings:"System Settings", myrecord:"My Attendance", editprofile:"Profile Details", account:"My Account", addemployee:"Add Employee", addshift:"Add Shift", payroll:"Payroll", reports:"Reports", pricing:"Pricing & Plans", usermgmt:"User Management", empoptions:"Employee App Options", shifts:"Work Shift Settings", businesses:"Business Management", inactive:"Inactive Employees", departments:"Department Type", invites:"Invites", notifSettings:"Notification Settings", attendanceSettings:"Attendance Settings", payrollSettings:"Payroll Setting", language:"Language", share:"Share App", privacy:"Privacy Policy" };
 
 // ── ROOT APP ──────────────────────────────────────────────────
 export default function App() {
