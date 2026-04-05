@@ -1479,8 +1479,8 @@ function AccountScreen({ employee, onNavigate, onLogout }) {
   const initials = employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
   const isAdmin = employee.role==='admin'||employee.role==='superadmin';
 
-  const Item = ({icon, title, sub, page, danger}) => (
-    <div className={`account-item${danger?' danger':''}`} onClick={()=>onNavigate(page)}>
+  const Item = ({icon, title, sub, dest, danger}) => (
+    <div className={`account-item${danger?' danger':''}`} onClick={()=>onNavigate(dest)}>
       <div className="account-item-icon">{icon}</div>
       <div className="account-item-info">
         <div className="account-item-title">{title}</div>
@@ -1508,42 +1508,42 @@ function AccountScreen({ employee, onNavigate, onLogout }) {
       </div>
 
       <Section title="Account">
-        <Item icon="✏️" title="Edit Profile" sub="Update your personal information" page="editprofile" />
-        <Item icon="💎" title="Pricing & Plans" sub="View and upgrade your plan" page="pricing" />
+        <Item icon="✏️" title="Edit Profile" sub="Update your personal information" dest="editprofile" />
+        <Item icon="💎" title="Pricing & Plans" sub="View and upgrade your plan" dest="pricing" />
       </Section>
 
       {isAdmin && (
         <Section title="Business Configuration">
-          <Item icon="👤" title="User Management" sub="Manage admin and supervisor roles" page="usermgmt" />
-          <Item icon="📱" title="Employee App Options" sub="Control what employees can access" page="empoptions" />
-          <Item icon="🕐" title="Work Shift Settings" sub="Create and manage work shifts" page="shifts" />
-          <Item icon="🏢" title="Businesses" sub="Manage your organisations" page="businesses" />
-          <Item icon="🚫" title="Inactive Employees" sub="View deactivated staff" page="inactive" />
-          <Item icon="🗂️" title="Department" sub="Manage departments" page="departments" />
-          <Item icon="✉️" title="Invites" sub="Pending employee invitations" page="invites" />
+          <Item icon="👤" title="User Management" sub="Manage admin and supervisor roles" dest="usermgmt" />
+          <Item icon="📱" title="Employee App Options" sub="Control what employees can access" dest="empoptions" />
+          <Item icon="🕐" title="Work Shift Settings" sub="Create and manage work shifts" dest="shifts" />
+          <Item icon="🏢" title="Businesses" sub="Manage your organisations" dest="businesses" />
+          <Item icon="🚫" title="Inactive Employees" sub="View deactivated staff" dest="inactive" />
+          <Item icon="🗂️" title="Department" sub="Manage departments" dest="departments" />
+          <Item icon="✉️" title="Invites" sub="Pending employee invitations" dest="invites" />
         </Section>
       )}
 
       <Section title="Notification Settings">
-        <Item icon="🔔" title="Notification Settings" sub="Manage your alerts" page="notifSettings" />
+        <Item icon="🔔" title="Notification Settings" sub="Manage your alerts" dest="notifSettings" />
       </Section>
 
       {isAdmin && (
         <Section title="Attendance Settings">
-          <Item icon="📋" title="Attendance Settings" sub="Reminders, absent rules, editing restrictions" page="attendanceSettings" />
+          <Item icon="📋" title="Attendance Settings" sub="Reminders, absent rules, editing restrictions" dest="attendanceSettings" />
         </Section>
       )}
 
       {isAdmin && (
         <Section title="Payroll Setting">
-          <Item icon="💰" title="Payroll Settings" sub="Cycle dates and calculation rules" page="payrollSettings" />
+          <Item icon="💰" title="Payroll Settings" sub="Cycle dates and calculation rules" dest="payrollSettings" />
         </Section>
       )}
 
       <Section title="Others">
-        <Item icon="🌐" title="Language" sub="English" page="language" />
-        <Item icon="🔗" title="Share App" sub="Invite others to AttendAI" page="share" />
-        <Item icon="📄" title="Privacy Policy" sub="Read our privacy policy" page="privacy" />
+        <Item icon="🌐" title="Language" sub="English" dest="language" />
+        <Item icon="🔗" title="Share App" sub="Invite others to AttendAI" dest="share" />
+        <Item icon="📄" title="Privacy Policy" sub="Read our privacy policy" dest="privacy" />
         <div className="account-item danger" onClick={onLogout}>
           <div className="account-item-icon">🚪</div>
           <div className="account-item-info"><div className="account-item-title">Logout</div></div>
