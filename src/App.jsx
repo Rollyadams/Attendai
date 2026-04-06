@@ -2563,8 +2563,12 @@ export default function App() {
     setSidebarOpen(false);
     if (ROOT_PAGES.includes(newPage)) {
       setPrevPage(null);
+      // Reset history stack for root pages
+      window.history.pushState({ page: newPage, prev: null }, '', window.location.pathname);
     } else {
       setPrevPage(page);
+      // Push state so Android back button works
+      window.history.pushState({ page: newPage, prev: page }, '', window.location.pathname);
     }
     setPageState(newPage);
   };
@@ -2577,6 +2581,21 @@ export default function App() {
   };
 
   const canGoBack = !!prevPage;
+
+  // Listen for Android/browser back button
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (e.state && e.state.prev) {
+        setPageState(e.state.prev);
+        setPrevPage(null);
+      } else if (prevPage) {
+        setPageState(prevPage);
+        setPrevPage(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [prevPage]);
   const [loading, setLoading]         = useState(true);
   const [employees, setEmployees]     = useState([]);
   const [clockIns, setClockIns]       = useState([]);
