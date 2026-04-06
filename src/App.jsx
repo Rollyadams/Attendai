@@ -47,24 +47,7 @@ const CSS = `
 body { background:var(--bg); color:var(--text); font-family:var(--body); }
 .app { display:flex; height:100vh; overflow:hidden; font-family:var(--body); background:var(--bg); }
 
-/* SIDEBAR — desktop only */
-.sidebar { width:220px; flex-shrink:0; background:var(--bg2); border-right:1px solid var(--border); display:flex; flex-direction:column; }
-.sidebar-logo { padding:20px 16px 16px; border-bottom:1px solid var(--border); }
-.sidebar-logo .brand { font-family:var(--display); font-size:17px; font-weight:800; color:var(--primary); letter-spacing:-0.3px; }
-.sidebar-logo .brand span { color:var(--text); }
-.sidebar-logo .tagline { font-size:10px; color:var(--text3); margin-top:2px; letter-spacing:1px; text-transform:uppercase; }
-.sidebar-role { margin:12px 12px; background:var(--primary-light); border-radius:10px; padding:10px 12px; display:flex; align-items:center; gap:10px; }
-.role-avatar { width:32px; height:32px; border-radius:8px; background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:13px; color:white; font-weight:700; }
-.role-info .name { font-size:13px; font-weight:600; color:var(--text); }
-.role-info .role { font-size:10px; color:var(--primary); text-transform:uppercase; letter-spacing:1px; font-weight:600; }
-.sidebar-nav { flex:1; padding:8px; overflow-y:auto; }
-.nav-section-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); padding:10px 8px 4px; font-weight:600; }
-.nav-item { display:flex; align-items:center; gap:8px; padding:9px 10px; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; color:var(--text2); transition:all 0.12s; margin-bottom:1px; }
-.nav-item:hover { background:var(--bg3); color:var(--text); }
-.nav-item.active { background:var(--primary-light); color:var(--primary); font-weight:600; }
-.nav-item .icon { font-size:15px; width:18px; text-align:center; }
-.nav-badge { margin-left:auto; background:var(--red); color:white; font-size:10px; font-weight:700; padding:1px 6px; border-radius:20px; }
-.sidebar-bottom { padding:12px; border-top:1px solid var(--border); }
+/* Sidebar removed — using bottom nav + profile icon */
 
 /* MAIN */
 .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
@@ -193,19 +176,9 @@ body { background:var(--bg); color:var(--text); font-family:var(--body); }
 
 /* BOTTOM NAV — mobile */
 .bottom-nav { display:none; }
-.sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:99; }
-.menu-toggle { display:none; background:none; border:none; color:var(--text); font-size:22px; cursor:pointer; padding:4px 6px; }
+.menu-toggle { display:none; }
 
 @media (max-width: 768px) {
-  .menu-toggle { display:block; }
-  .sidebar-overlay.open { display:block; }
-  .sidebar {
-    position:fixed; top:0; left:0; height:100vh; z-index:100;
-    transform:translateX(-100%); transition:transform 0.25s ease;
-    box-shadow:4px 0 24px rgba(0,0,0,0.15);
-    width:240px;
-  }
-  .sidebar.open { transform:translateX(0); }
   .main { width:100vw; }
   .content { padding:12px; padding-bottom:72px; }
   .stats-grid { grid-template-columns:1fr 1fr; gap:8px; }
@@ -2549,7 +2522,6 @@ const PAGE_TITLES = { dashboard:"Dashboard Overview", clockin:"AI Check-In", emp
 // ── ROOT APP ──────────────────────────────────────────────────
 export default function App() {
   const [authUser, setAuthUser]       = useState(null);
-  const [sidebarOpen, setSidebarOpen]   = useState(false);
   const [employee, setEmployee]       = useState(null);
   const [page, setPageState]          = useState("clockin");
   const [prevPage, setPrevPage]       = useState(null);
@@ -2560,8 +2532,7 @@ export default function App() {
 
   const setPage = (newPage) => {
     setProfileOpen(false);
-    setSidebarOpen(false);
-    if (ROOT_PAGES.includes(newPage)) {
+        if (ROOT_PAGES.includes(newPage)) {
       setPrevPage(null);
       // Reset history stack for root pages
       window.history.pushState({ page: newPage, prev: null }, '', window.location.pathname);
@@ -2689,7 +2660,6 @@ export default function App() {
   );
 
   const isAdmin = employee.role==="admin"||employee.role==="superadmin"||employee.role==="supervisor";
-  const nav = isAdmin ? ADMIN_NAV : EMP_NAV;
 
   const renderPage = () => {
     switch(page) {
@@ -2714,44 +2684,12 @@ export default function App() {
     <>
       <style>{FONTS}{CSS}</style>
       <div className="app">
-        <div className={`sidebar-overlay ${sidebarOpen?"open":""}`} onClick={()=>setSidebarOpen(false)} />
-        <div className={`sidebar ${sidebarOpen?"open":""}`}>
-          <div className="sidebar-logo">
-            <div className="brand">Attend<span>AI</span></div>
-            <div className="tagline">Workforce Intelligence</div>
-          </div>
-          <div className="sidebar-role">
-            <div className="role-avatar">👤</div>
-            <div className="role-info">
-              <div className="name">{employee.full_name}</div>
-              <div className="role">{employee.role}</div>
-            </div>
-          </div>
-          <div className="sidebar-nav">
-            {nav.map(section => (
-              <div key={section.section}>
-                <div className="nav-section-label">{section.section}</div>
-                {section.items.map(item => (
-                  <div key={item.id} className={`nav-item ${page===item.id?"active":""}`} onClick={()=>{ setPage(item.id); setSidebarOpen(false); }}>
-                    <span className="icon">{item.icon}</span>
-                    {item.label}
-                    {item.badge && pendingOverrides>0 && <span className="nav-badge">{pendingOverrides}</span>}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-          <div className="sidebar-bottom">
-            <button className="btn btn-ghost" style={{width:"100%",justifyContent:"center",fontSize:12}} onClick={handleLogout}>← Sign Out</button>
-          </div>
-        </div>
-
-        <div className="main">
+        <div className="main" style={{width:'100vw'}}>
           <div className="topbar" style={{position:'relative'}}>
             {canGoBack ? (
-              <button onClick={goBack} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:'var(--text)',padding:'4px 8px',display:'flex',alignItems:'center'}}>←</button>
+              <button onClick={goBack} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:'var(--text)',padding:'4px 8px',display:'flex',alignItems:'center',fontFamily:'var(--body)'}}>←</button>
             ) : (
-              <button className="menu-toggle" onClick={()=>setSidebarOpen(o=>!o)}>☰</button>
+              <div style={{width:36}} />
             )}
             <div className="topbar-title">{PAGE_TITLES[page]||"AttendAI"}</div>
             <span className="topbar-time"><Clock /></span>
@@ -2774,7 +2712,6 @@ export default function App() {
           <div className="content">
             {renderPage()}
           </div>
-          {/* Bottom navigation — mobile only */}
           <div className="bottom-nav">
             {(isAdmin ? [
               {id:'dashboard', icon:'🏠', label:'Home'},
