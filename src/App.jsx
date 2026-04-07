@@ -1656,30 +1656,94 @@ function ProfileScreen({ employee, onSaved }) {
 
 // ── PRICING & PLANS ───────────────────────────────────────────
 function PricingScreen() {
-  const [selected, setSelected]     = useState('quarterly');
+  const [billing, setBilling]         = useState('annual'); // monthly | annual
+  const [selectedPlan, setSelectedPlan] = useState('pro');
   const [showFeatures, setShowFeatures] = useState(false);
-  const [showQuote, setShowQuote]   = useState(false);
+  const [showQuote, setShowQuote]     = useState(false);
+  const [showPayForm, setShowPayForm] = useState(false);
   const [form, setForm] = useState({ company:'', phone:'', address:'', state:'', coupon:'' });
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
 
   const plans = [
-    { id:'quarterly', label:'Quarterly',  price:'₦120,000',   original:null,         discount:null },
-    { id:'yearly',    label:'Yearly',     price:'₦384,000',   original:'₦480,000',   discount:'20% OFF' },
-    { id:'threeyear', label:'3 Yearly',   price:'₦1,008,000', original:'₦1,440,000', discount:'30% OFF' },
+    {
+      id:'free',
+      name:'Free',
+      color:'#64748B',
+      monthlyPrice: null,
+      annualPrice: null,
+      displayPrice: 'Free',
+      displaySub: 'Forever',
+      features:[
+        '✓ Up to 5 employees (1st month)',
+        '✓ Up to 3 employees (after 1 month)',
+        '✓ Basic clock in/out',
+        '✓ Face recognition',
+        '✗ GPS geofencing',
+        '✗ Payroll & payslips',
+        '✗ Reports',
+        '✗ Multi-business',
+      ],
+      cta: 'Get Started Free',
+      ctaStyle: {background:'#64748B'},
+    },
+    {
+      id:'pro',
+      name:'Pro',
+      color:'var(--primary)',
+      monthlyPrice: '₦10,000',
+      annualPrice:  '₦120,000',
+      displayPrice: billing==='monthly' ? '₦10,000' : '₦120,000',
+      displaySub:   billing==='monthly' ? 'per month' : 'per year',
+      savings: billing==='annual' ? 'Save ₦0' : null,
+      badge: 'Most Popular',
+      features:[
+        '✓ Up to 50 employees',
+        '✓ Face recognition',
+        '✓ GPS geofencing',
+        '✓ Attendance reports',
+        '✓ Payroll & payslips',
+        '✓ Attendance reminders',
+        '✓ GPS override approvals',
+        '✓ Single business',
+        '✓ Email support',
+        '✗ Multi-business',
+        '✗ Buddy punch detection',
+        '✗ Broadcast messaging',
+      ],
+      cta: 'Get Pro',
+      ctaStyle: {background:'var(--primary)'},
+    },
+    {
+      id:'max',
+      name:'Max',
+      color:'#7C3AED',
+      monthlyPrice: '₦20,000',
+      annualPrice:  '₦240,000',
+      displayPrice: billing==='monthly' ? '₦20,000' : '₦240,000',
+      displaySub:   billing==='monthly' ? 'per month' : 'per year',
+      badge: 'Best Value',
+      features:[
+        '✓ Unlimited employees',
+        '✓ Everything in Pro',
+        '✓ Multi-business support',
+        '✓ Buddy punch detection',
+        '✓ GPS override approvals',
+        '✓ Expense management',
+        '✓ Broadcast messaging',
+        '✓ CRM Lite',
+        '✓ Advanced reports',
+        '✓ Priority support',
+      ],
+      cta: 'Get Max',
+      ctaStyle: {background:'#7C3AED'},
+    },
   ];
-  const cur = plans.find(p=>p.id===selected);
 
-  const features = [
-    'AI Face Recognition','GPS Geofencing','Buddy Punch Detection',
-    'Payroll & Payslip Access','Attendance Reports','Employee Management',
-    'Work Shift Settings','Department Management','GPS Override Approvals',
-    'Expense Management','Advance Access','Business Broadcast',
-    'Multi-Business Support','User Management','Employee App',
-  ];
+  const cur = plans.find(p=>p.id===selectedPlan);
 
   const Modal = ({title, onClose, children}) => (
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:300,display:'flex',alignItems:'flex-end'}} onClick={onClose}>
-      <div style={{background:'white',borderRadius:'20px 20px 0 0',padding:24,width:'100%',maxHeight:'80vh',overflow:'auto'}} onClick={e=>e.stopPropagation()}>
+      <div style={{background:'white',borderRadius:'20px 20px 0 0',padding:24,width:'100%',maxHeight:'80vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
           <div style={{fontFamily:'var(--display)',fontSize:17,fontWeight:800}}>{title}</div>
           <button onClick={onClose} style={{background:'none',border:'none',fontSize:22,cursor:'pointer',color:'var(--text2)'}}>✕</button>
@@ -1690,123 +1754,175 @@ function PricingScreen() {
   );
 
   return (
-    <div className="fade-in">
-      {/* Header row with Get your Quote */}
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-        <div style={{fontFamily:'var(--display)',fontSize:15,fontWeight:700}}>Select Plan</div>
-        <button onClick={()=>setShowQuote(true)} style={{background:'none',border:'none',color:'var(--primary)',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'var(--body)'}}>Get your Quote</button>
+    <div className="fade-in" style={{paddingBottom:80}}>
+
+      {/* Header */}
+      <div style={{textAlign:'center',marginBottom:20}}>
+        <div style={{fontFamily:'var(--display)',fontSize:20,fontWeight:800,marginBottom:6}}>Choose Your Plan</div>
+        <div style={{fontSize:13,color:'var(--text2)'}}>Start free. Upgrade when you grow.</div>
       </div>
 
-      {/* Plan cards — compact to fit screen */}
-      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:14}}>
-        {plans.map(p=>(
-          <div key={p.id} onClick={()=>setSelected(p.id)} style={{
-            border:`2px solid ${selected===p.id?'var(--primary)':'var(--border)'}`,
-            borderRadius:12, padding:'10px 6px', textAlign:'center', cursor:'pointer',
-            background:selected===p.id?'var(--primary-light)':'white',
-            position:'relative', transition:'all 0.15s'
+      {/* Billing toggle */}
+      <div style={{display:'flex',background:'var(--bg3)',borderRadius:12,padding:4,marginBottom:20,border:'1px solid var(--border)'}}>
+        {['monthly','annual'].map(b=>(
+          <button key={b} onClick={()=>setBilling(b)} style={{
+            flex:1,padding:'10px',borderRadius:9,border:'none',cursor:'pointer',
+            fontFamily:'var(--body)',fontSize:13,fontWeight:600,transition:'all 0.15s',
+            background:billing===b?'white':'transparent',
+            color:billing===b?'var(--primary)':'var(--text2)',
+            boxShadow:billing===b?'0 1px 4px rgba(0,0,0,0.1)':'none',
           }}>
-            {p.discount && (
-              <div style={{position:'absolute',top:-10,left:'50%',transform:'translateX(-50%)',background:'var(--red)',color:'white',fontSize:9,fontWeight:700,padding:'2px 6px',borderRadius:20,whiteSpace:'nowrap'}}>
-                {p.discount}
-              </div>
-            )}
-            {p.original && <div style={{fontSize:10,color:'var(--text3)',textDecoration:'line-through',marginBottom:2}}>{p.original}</div>}
-            <div style={{fontFamily:'var(--display)',fontSize:13,fontWeight:800,color:'var(--text)',lineHeight:1.2}}>{p.price}</div>
-            <div style={{fontSize:10,color:'var(--text2)',marginTop:4,fontWeight:500}}>{p.label}</div>
-          </div>
+            {b==='monthly'?'Monthly':'Annual'}
+            {b==='annual' && <span style={{marginLeft:6,fontSize:10,background:'var(--green)',color:'white',padding:'1px 6px',borderRadius:10,fontWeight:700}}>SAVE 17%</span>}
+          </button>
         ))}
       </div>
 
-      {/* View All Plan Features */}
+      {/* Plan cards */}
+      {plans.map(p=>(
+        <div key={p.id} onClick={()=>setSelectedPlan(p.id)} style={{
+          border:`2px solid ${selectedPlan===p.id?p.color:'var(--border)'}`,
+          borderRadius:16, padding:16, marginBottom:12, background:'white',
+          cursor:'pointer', transition:'all 0.15s', position:'relative',
+          boxShadow: selectedPlan===p.id?`0 4px 16px ${p.color}22`:'var(--shadow)',
+        }}>
+          {p.badge && (
+            <div style={{position:'absolute',top:-10,right:16,background:p.color,color:'white',fontSize:10,fontWeight:700,padding:'3px 10px',borderRadius:20}}>
+              {p.badge}
+            </div>
+          )}
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
+            <div>
+              <div style={{fontFamily:'var(--display)',fontSize:16,fontWeight:800,color:p.color}}>{p.name}</div>
+              <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>{p.id==='free'?'Great to start':'Billed '+billing}</div>
+            </div>
+            <div style={{textAlign:'right'}}>
+              <div style={{fontFamily:'var(--display)',fontSize:22,fontWeight:800,color:p.color}}>{p.displayPrice}</div>
+              <div style={{fontSize:10,color:'var(--text3)'}}>{p.displaySub}</div>
+            </div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'4px 8px'}}>
+            {p.features.slice(0,6).map(f=>(
+              <div key={f} style={{fontSize:11,color:f.startsWith('✓')?'var(--text)':'var(--text3)',display:'flex',gap:4}}>
+                <span style={{color:f.startsWith('✓')?'var(--green)':'var(--red)',flexShrink:0}}>{f.slice(0,1)}</span>
+                <span>{f.slice(2)}</span>
+              </div>
+            ))}
+          </div>
+          {p.features.length>6 && (
+            <div style={{fontSize:11,color:'var(--primary)',fontWeight:600,marginTop:8}}>+{p.features.length-6} more features</div>
+          )}
+        </div>
+      ))}
+
+      {/* View all features */}
       <button onClick={()=>setShowFeatures(true)} style={{display:'flex',alignItems:'center',gap:6,color:'var(--primary)',fontWeight:600,fontSize:13,background:'none',border:'none',cursor:'pointer',fontFamily:'var(--body)',marginBottom:20,padding:0}}>
         📋 View All Plan Features
       </button>
 
-      {/* Contact Detail */}
-      <div style={{fontFamily:'var(--display)',fontSize:15,fontWeight:700,marginBottom:12}}>Contact Detail</div>
-      <div className="form-group">
-        <input className="form-input" placeholder="Company Name *" value={form.company} onChange={e=>set('company',e.target.value)} />
-      </div>
-      <div className="form-group">
-        <label className="form-label">Mobile Number</label>
-        <div className="phone-input-wrap">
-          <select className="phone-code-select">
-            {WA_COUNTRIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
-          </select>
-          <input className="phone-number-input" placeholder="Enter mobile number" value={form.phone} onChange={e=>set('phone',e.target.value)} />
-        </div>
-      </div>
-      <div className="form-group">
-        <input className="form-input" placeholder="Email ID (Optional)" value={form.email||''} onChange={e=>set('email',e.target.value)} />
+      {/* Get Quote link */}
+      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:16}}>
+        <button onClick={()=>setShowQuote(true)} style={{background:'none',border:'none',color:'var(--primary)',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'var(--body)'}}>Get your Quote →</button>
       </div>
 
-      <div style={{fontFamily:'var(--display)',fontSize:15,fontWeight:700,margin:'16px 0 12px'}}>Billing Address</div>
-      <div className="form-group"><input className="form-input" placeholder="Address" value={form.address} onChange={e=>set('address',e.target.value)} /></div>
-      <div className="form-group"><input className="form-input" placeholder="Country" defaultValue="Nigeria" /></div>
-      <div className="form-group"><input className="form-input" placeholder="State / Province" value={form.state} onChange={e=>set('state',e.target.value)} /></div>
+      {/* CTA Button */}
+      {selectedPlan !== 'free' && (
+        <button
+          className="btn"
+          style={{width:'100%',justifyContent:'center',padding:14,fontSize:15,...cur.ctaStyle,color:'white',borderRadius:12,marginBottom:12}}
+          onClick={()=>setShowPayForm(true)}
+        >
+          {cur.cta} — {cur.displayPrice}/{billing==='monthly'?'mo':'yr'}
+        </button>
+      )}
+      {selectedPlan === 'free' && (
+        <button className="btn btn-ghost" style={{width:'100%',justifyContent:'center',padding:14,fontSize:15,borderRadius:12}}>
+          You are on the Free Plan
+        </button>
+      )}
 
-      {/* Coupons */}
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-        <div style={{fontFamily:'var(--display)',fontSize:15,fontWeight:700}}>Coupons</div>
-        <span style={{color:'var(--primary)',fontSize:12,fontWeight:600}}>View All</span>
-      </div>
-      <div style={{fontSize:13,color:'var(--text2)',marginBottom:8}}>Have a coupon code?</div>
-      <div style={{display:'flex',gap:10,marginBottom:20}}>
-        <input className="form-input" placeholder="Enter coupon code" style={{flex:1}} value={form.coupon} onChange={e=>set('coupon',e.target.value)} />
-        <button className="btn btn-primary" style={{padding:'11px 18px'}}>Apply</button>
-      </div>
-
-      {/* Purchase Summary */}
-      <div style={{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:12,padding:16,marginBottom:8}}>
-        <div style={{fontFamily:'var(--display)',fontSize:14,fontWeight:700,marginBottom:12}}>Purchase Summary</div>
-        <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border)',fontSize:13}}>
-          <span>Base Price</span><span style={{fontWeight:600}}>{cur.price}</span>
-        </div>
-        <div style={{display:'flex',justifyContent:'space-between',padding:'10px 0 0',fontSize:14,fontWeight:700}}>
-          <span>Total Amount:</span><span style={{color:'var(--primary)'}}>{cur.price}</span>
-        </div>
-      </div>
-      <div style={{fontSize:11,color:'var(--text3)',textAlign:'center',marginBottom:80}}>
+      <div style={{fontSize:11,color:'var(--text3)',textAlign:'center',marginTop:8}}>
         By continuing, you agree to our <span style={{color:'var(--primary)'}}>T&C</span> and <span style={{color:'var(--primary)'}}>Privacy Policy</span>
       </div>
 
-      {/* Sticky footer */}
-      <div style={{position:'fixed',bottom:66,left:0,right:0,background:'white',padding:'10px 16px',borderTop:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center',zIndex:10}}>
-        <div>
-          <div style={{fontSize:11,color:'var(--text3)'}}>Total Amount:</div>
-          <div style={{fontFamily:'var(--display)',fontSize:18,fontWeight:800,color:'var(--primary)'}}>{cur.price}</div>
-        </div>
-        <button className="btn btn-primary" style={{padding:'12px 24px',fontSize:14}}>Continue to Payment</button>
-      </div>
-
-      {/* Plan Features Modal */}
+      {/* Features Modal */}
       {showFeatures && (
-        <Modal title="Plan Features" onClose={()=>setShowFeatures(false)}>
-          {features.map(f=>(
-            <div key={f} className="feature-item">
-              <div className="feature-check">✓</div>
-              <span>{f}</span>
-            </div>
-          ))}
+        <Modal title="All Plan Features" onClose={()=>setShowFeatures(false)}>
+          {['Free','Pro','Max'].map((planName,pi)=>{
+            const pl = plans[pi];
+            return (
+              <div key={planName} style={{marginBottom:20}}>
+                <div style={{fontFamily:'var(--display)',fontSize:14,fontWeight:800,color:pl.color,marginBottom:8,paddingBottom:6,borderBottom:`2px solid ${pl.color}`}}>{planName}</div>
+                {pl.features.map(f=>(
+                  <div key={f} style={{display:'flex',alignItems:'center',gap:10,padding:'7px 0',borderBottom:'1px solid var(--border)',fontSize:13}}>
+                    <div style={{width:20,height:20,borderRadius:'50%',background:f.startsWith('✓')?'var(--green)':'var(--bg4)',display:'flex',alignItems:'center',justifyContent:'center',color:f.startsWith('✓')?'white':'var(--text3)',fontSize:11,flexShrink:0}}>{f.startsWith('✓')?'✓':'✗'}</div>
+                    <span style={{color:f.startsWith('✓')?'var(--text)':'var(--text3)'}}>{f.slice(2)}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </Modal>
       )}
 
-      {/* Get Your Quote Modal */}
+      {/* Payment Form Modal */}
+      {showPayForm && cur && (
+        <Modal title={`Get ${cur.name} Plan`} onClose={()=>setShowPayForm(false)}>
+          <div style={{background:`${cur.color}11`,borderRadius:10,padding:12,marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div style={{fontFamily:'var(--display)',fontSize:15,fontWeight:800,color:cur.color}}>{cur.name} Plan</div>
+            <div style={{fontFamily:'var(--display)',fontSize:18,fontWeight:800,color:cur.color}}>{cur.displayPrice}<span style={{fontSize:11,fontWeight:400,color:'var(--text3)'}}>/{billing==='monthly'?'mo':'yr'}</span></div>
+          </div>
+          <div className="form-group">
+            <input className="form-input" placeholder="Company Name *" value={form.company} onChange={e=>set('company',e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Mobile Number</label>
+            <div className="phone-input-wrap">
+              <select className="phone-code-select">
+                {WA_COUNTRIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
+              </select>
+              <input className="phone-number-input" placeholder="Enter mobile number" value={form.phone} onChange={e=>set('phone',e.target.value)} />
+            </div>
+          </div>
+          <div className="form-group">
+            <input className="form-input" placeholder="Email ID" value={form.email||''} onChange={e=>set('email',e.target.value)} />
+          </div>
+          <div className="form-group">
+            <input className="form-input" placeholder="Billing Address" value={form.address} onChange={e=>set('address',e.target.value)} />
+          </div>
+          <div style={{display:'flex',gap:10,marginBottom:20}}>
+            <input className="form-input" placeholder="Coupon code" style={{flex:1}} value={form.coupon} onChange={e=>set('coupon',e.target.value)} />
+            <button className="btn btn-ghost" style={{padding:'11px 14px'}}>Apply</button>
+          </div>
+          <div style={{background:'var(--bg3)',borderRadius:10,padding:14,marginBottom:16}}>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:8}}>
+              <span>Base Price</span><span style={{fontWeight:600}}>{cur.displayPrice}</span>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:14,fontWeight:700}}>
+              <span>Total</span><span style={{color:cur.color}}>{cur.displayPrice}</span>
+            </div>
+          </div>
+          <button className="btn" style={{width:'100%',justifyContent:'center',padding:14,fontSize:15,...cur.ctaStyle,color:'white',borderRadius:12}}>
+            Continue to Payment
+          </button>
+        </Modal>
+      )}
+
+      {/* Get Quote Modal */}
       {showQuote && (
         <Modal title="Get Your Quote" onClose={()=>setShowQuote(false)}>
           <div className="form-group">
-            <label className="form-label">Enter Number of Employees</label>
-            <input className="form-input" placeholder="Enter Number of Employees" type="number" />
-            <div style={{fontSize:11,color:'var(--text3)',marginTop:4,textAlign:'right'}}>Upto 5 lacs</div>
+            <label className="form-label">Number of Employees</label>
+            <input className="form-input" placeholder="Enter number of employees" type="number" />
+            <div style={{fontSize:11,color:'var(--text3)',marginTop:4,textAlign:'right'}}>Up to 500,000</div>
           </div>
           <div className="form-group">
-            <label className="form-label">Enter Number of Businesses / Locations to Manage</label>
-            <input className="form-input" placeholder="Enter Number of Businesses / Locations" type="number" />
+            <label className="form-label">Number of Businesses / Locations</label>
+            <input className="form-input" placeholder="Enter number of businesses" type="number" />
           </div>
           <div className="form-group">
-            <label className="form-label">Description</label>
-            <textarea className="form-input" rows={3} placeholder="Enter Any Specific Requirements" />
+            <label className="form-label">Specific Requirements</label>
+            <textarea className="form-input" rows={3} placeholder="Describe your requirements…" />
           </div>
           <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',padding:14,fontSize:15}}>Submit</button>
         </Modal>
@@ -1815,7 +1931,6 @@ function PricingScreen() {
   );
 }
 
-// ── USER MANAGEMENT (Premium Features) ───────────────────────
 function UserMgmtScreen() {
   const features = [
     'Desktop Access','Cashbook Access','Fine Access','Vehicle Management Access',
