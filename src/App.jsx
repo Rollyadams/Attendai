@@ -1467,7 +1467,7 @@ function AccountScreen({ employee, onLogout, employees }) {
     const renderSub = () => {
       if (sub==='editprofile')       return <ProfileScreen employee={employee} />;
       if (sub==='pricing')           return <PricingScreen />;
-      if (sub==='usermgmt')          return <UserMgmtScreen />;
+      if (sub==='usermgmt')          return <UserMgmtScreen onNavigate={(p)=>setSub(p)} />;
       if (sub==='empoptions')        return <EmpOptionsScreen />;
       if (sub==='shifts')            return <ShiftsScreen onAddNew={()=>setSub('addshift')} />;
       if (sub==='addshift')          return <AddShiftScreen onSuccess={()=>setSub('shifts')} />;
@@ -1924,64 +1924,97 @@ function PricingScreen() {
             <label className="form-label">Specific Requirements</label>
             <textarea className="form-input" rows={3} placeholder="Describe your requirements…" />
           </div>
-          <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',padding:14,fontSize:15}}>Submit</button>
+          <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',padding:14,fontSize:15}} onClick={()=>{
+  alert('Thank you! We will review your requirements and get back to you at rollyadamstechworld@gmail.com shortly.');
+  setShowQuote(false);
+}}>Submit</button>
         </Modal>
       )}
     </div>
   );
 }
 
-function UserMgmtScreen() {
+function UserMgmtScreen({ onNavigate }) {
   const features = [
-    'Desktop Access','Cashbook Access','Fine Access','Vehicle Management Access',
-    'User Management Access','Employee Documents Access','Payslip Access',
-    'Punch In/Out Access','Employee App','Inventory Management Access',
-    'Expense Management','Advance Access','CRM Lite','Add Employees','Business Broadcast',
+    {icon:'📸', label:'AI Face Recognition', plan:'free'},
+    {icon:'⏰', label:'Basic Clock In/Out', plan:'free'},
+    {icon:'👥', label:'Up to 3 Employees (Free)', plan:'free'},
+    {icon:'📋', label:'Attendance Records', plan:'free'},
+    {icon:'📍', label:'GPS Geofencing', plan:'pro'},
+    {icon:'💰', label:'Payroll & Payslips', plan:'pro'},
+    {icon:'📊', label:'Attendance Reports', plan:'pro'},
+    {icon:'🔔', label:'Attendance Reminders', plan:'pro'},
+    {icon:'✅', label:'GPS Override Approvals', plan:'pro'},
+    {icon:'👥', label:'Up to 50 Employees (Pro)', plan:'pro'},
+    {icon:'🏢', label:'Multi-Business Support', plan:'max'},
+    {icon:'🤖', label:'Buddy Punch Detection', plan:'max'},
+    {icon:'📢', label:'Broadcast Messaging', plan:'max'},
+    {icon:'💼', label:'Expense Management', plan:'max'},
+    {icon:'🔖', label:'CRM Lite', plan:'max'},
+    {icon:'👥', label:'Unlimited Employees (Max)', plan:'max'},
+    {icon:'🎯', label:'Priority Support', plan:'max'},
   ];
+  const planColor = {free:'#64748B', pro:'var(--primary)', max:'#7C3AED'};
+  const planLabel = {free:'FREE', pro:'PRO', max:'MAX'};
+
   return (
     <div className="fade-in">
       <div style={{background:'linear-gradient(160deg,#EBF0FF,#E0ECFF)',borderRadius:14,padding:20,textAlign:'center',marginBottom:20,border:'1px solid var(--border)'}}>
         <div style={{width:64,height:64,borderRadius:'50%',background:'var(--primary)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px',fontSize:28}}>💎</div>
         <div style={{fontFamily:'var(--display)',fontSize:17,fontWeight:800,marginBottom:6}}>AttendAI Premium</div>
-        <div style={{fontSize:13,color:'var(--text2)',lineHeight:1.5}}>Get 7 days free access to our premium features and explore how AttendAI simplifies your business operations</div>
+        <div style={{fontSize:13,color:'var(--text2)',lineHeight:1.5}}>Start free for 1 month. Upgrade to unlock powerful workforce management tools.</div>
       </div>
-      <div style={{fontFamily:'var(--display)',fontSize:15,fontWeight:700,marginBottom:12}}>Our premium features</div>
+
+      <div style={{fontFamily:'var(--display)',fontSize:15,fontWeight:700,marginBottom:12}}>All Features</div>
       <div className="card" style={{marginBottom:20}}>
         {features.map(f=>(
-          <div key={f} className="feature-item">
-            <div className="feature-check">✓</div>
-            <span>{f}</span>
+          <div key={f.label} className="feature-item">
+            <div className="feature-check" style={{background:planColor[f.plan]}}>{f.icon}</div>
+            <span style={{flex:1}}>{f.label}</span>
+            <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:20,background:planColor[f.plan]+'22',color:planColor[f.plan]}}>{planLabel[f.plan]}</span>
           </div>
         ))}
       </div>
+
       <div style={{display:'flex',gap:10,paddingBottom:20}}>
-        <button className="btn btn-ghost" style={{flex:1,justifyContent:'center',padding:14}}>View All Plans</button>
-        <button className="btn btn-primary" style={{flex:1,justifyContent:'center',padding:14}}>Start 7 Days Trial</button>
+        <button className="btn btn-ghost" style={{flex:1,justifyContent:'center',padding:14}} onClick={()=>onNavigate&&onNavigate('pricing')}>View All Plans</button>
+        <button className="btn btn-primary" style={{flex:1,justifyContent:'center',padding:14}} onClick={()=>onNavigate&&onNavigate('pricing')}>Start 1 Month Free</button>
       </div>
     </div>
   );
 }
 
 // ── EMPLOYEE APP OPTIONS ──────────────────────────────────────
-function EmpOptionsScreen({ settings, onSaved }) {
+function EmpOptionsScreen() {
+  // currentPlan would come from app_settings in production
+  // For now default to 'free' to show locked state
+  const currentPlan = 'free'; // 'free' | 'pro' | 'max'
+
+  const items = [
+    {key:'attendance',      label:'Attendance',          plan:'free'},
+    {key:'overtime',        label:'OverTime',             plan:'pro'},
+    {key:'leave',           label:'Leave',                plan:'pro'},
+    {key:'holidays',        label:'Holidays',             plan:'pro'},
+    {key:'payroll',         label:'Payroll',              plan:'pro'},
+    {key:'business_expense',label:'Business Expense',     plan:'max'},
+    {key:'approve_expense', label:'Approve Expense',      plan:'max'},
+    {key:'vehicle_mgmt',    label:'Vehicle Management',   plan:'max'},
+  ];
+
+  const planLevel = {free:0, pro:1, max:2};
+  const isUnlocked = (itemPlan) => planLevel[currentPlan] >= planLevel[itemPlan];
+
   const [opts, setOpts] = useState({
-    overtime:true, business_expense:true, approve_expense:false,
-    vehicle_mgmt:true, payroll:false, leave:false, holidays:false, attendance:false,
+    attendance:true, overtime:false, leave:false, holidays:false,
+    payroll:false, business_expense:false, approve_expense:false, vehicle_mgmt:false,
   });
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
-  const toggle = k => setOpts(o=>({...o,[k]:!o[k]}));
 
-  const items = [
-    {key:'overtime',        label:'OverTime'},
-    {key:'business_expense',label:'Business Expense'},
-    {key:'approve_expense', label:'Approve Expense'},
-    {key:'vehicle_mgmt',    label:'Vehicle Management'},
-    {key:'payroll',         label:'Payroll'},
-    {key:'leave',           label:'Leave'},
-    {key:'holidays',        label:'Holidays'},
-    {key:'attendance',      label:'Attendance'},
-  ];
+  const toggle = (k, itemPlan) => {
+    if (!isUnlocked(itemPlan)) return; // locked
+    setOpts(o=>({...o,[k]:!o[k]}));
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -1989,18 +2022,39 @@ function EmpOptionsScreen({ settings, onSaved }) {
     setSaving(false); setSaved(true); setTimeout(()=>setSaved(false),2000);
   };
 
+  const planColor = {free:'#64748B', pro:'var(--primary)', max:'#7C3AED'};
+  const planLabel = {free:'FREE', pro:'PRO', max:'MAX'};
+
   return (
     <div className="fade-in">
       {saved && <div className="success-box">✓ Employee app options saved.</div>}
+      <div style={{background:'var(--primary-light)',borderRadius:10,padding:12,marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <div style={{fontSize:13,color:'var(--primary)',fontWeight:600}}>Current Plan: <strong style={{textTransform:'uppercase'}}>{currentPlan}</strong></div>
+        <span style={{fontSize:11,color:'var(--primary)',fontWeight:600,cursor:'pointer'}}>Upgrade →</span>
+      </div>
       <div className="card" style={{marginBottom:20}}>
-        {items.map(item=>(
-          <div key={item.key} className="check-item">
-            <span style={{color:opts[item.key]?'var(--text)':'var(--text3)'}}>{item.label}</span>
-            <div className={`checkbox ${opts[item.key]?'checked':''}`} onClick={()=>toggle(item.key)}>
-              {opts[item.key] && '✓'}
+        {items.map(item=>{
+          const unlocked = isUnlocked(item.plan);
+          return (
+            <div key={item.key} className="check-item" style={{opacity:unlocked?1:0.6}}>
+              <div style={{flex:1}}>
+                <span style={{color:unlocked?'var(--text)':'var(--text3)',fontWeight:500}}>{item.label}</span>
+                {!unlocked && (
+                  <span style={{marginLeft:8,fontSize:10,fontWeight:700,padding:'2px 6px',borderRadius:10,background:planColor[item.plan]+'22',color:planColor[item.plan]}}>
+                    🔒 {planLabel[item.plan]}
+                  </span>
+                )}
+              </div>
+              <div
+                className={`checkbox ${opts[item.key]&&unlocked?'checked':''}`}
+                onClick={()=>toggle(item.key, item.plan)}
+                style={{cursor:unlocked?'pointer':'not-allowed', opacity:unlocked?1:0.4}}
+              >
+                {opts[item.key]&&unlocked && '✓'}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',padding:14,fontSize:15}} onClick={handleSave} disabled={saving}>
         {saving ? <><span className="spinner"/>&nbsp;Saving…</> : 'Save'}
@@ -2014,6 +2068,7 @@ function ShiftsScreen({ onAddNew }) {
   const [shifts, setShifts]   = useState([]);
   const [search, setSearch]   = useState('');
   const [loading, setLoading] = useState(true);
+  const [editShift, setEditShift] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -2022,8 +2077,20 @@ function ShiftsScreen({ onAddNew }) {
   useEffect(()=>load(),[]);
 
   const deleteShift = async (id) => {
+    if (!window.confirm) { await supabase.from('shifts').delete().eq('id',id); load(); return; }
     await supabase.from('shifts').delete().eq('id',id);
     load();
+  };
+
+  const saveEdit = async () => {
+    if (!editShift) return;
+    await supabase.from('shifts').update({
+      name: editShift.name,
+      start_time: editShift.start_time,
+      end_time: editShift.end_time,
+      grace_mins: parseInt(editShift.grace_mins)||10,
+    }).eq('id', editShift.id);
+    setEditShift(null); load();
   };
 
   const filtered = shifts.filter(s=>s.name.toLowerCase().includes(search.toLowerCase()));
@@ -2054,69 +2121,206 @@ function ShiftsScreen({ onAddNew }) {
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
             <div className="shift-time">{fmt(s.start_time)} – {fmt(s.end_time)}</div>
             <div className="shift-actions">
-              <button className="btn btn-ghost" style={{padding:'6px 10px',fontSize:13}} onClick={()=>{}}>✏️</button>
+              <button className="btn btn-ghost" style={{padding:'6px 10px',fontSize:13}} onClick={()=>setEditShift({...s})}>✏️</button>
               <button className="btn btn-danger" style={{padding:'6px 10px',fontSize:13}} onClick={()=>deleteShift(s.id)}>🗑️</button>
             </div>
           </div>
         </div>
       ))}
       <button className="fab" onClick={onAddNew}>+</button>
+
+      {/* Edit Shift Modal */}
+      {editShift && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:200,display:'flex',alignItems:'flex-end'}}>
+          <div style={{background:'white',borderRadius:'20px 20px 0 0',padding:24,width:'100%'}}>
+            <div style={{fontFamily:'var(--display)',fontSize:16,fontWeight:800,marginBottom:16}}>Edit Shift</div>
+            <div className="form-group">
+              <label className="form-label">Shift Name</label>
+              <input className="form-input" value={editShift.name} onChange={e=>setEditShift(s=>({...s,name:e.target.value}))} />
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+              <div className="form-group">
+                <label className="form-label">Start Time</label>
+                <input className="form-input" type="time" value={editShift.start_time} onChange={e=>setEditShift(s=>({...s,start_time:e.target.value}))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">End Time</label>
+                <input className="form-input" type="time" value={editShift.end_time} onChange={e=>setEditShift(s=>({...s,end_time:e.target.value}))} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Grace Period (minutes)</label>
+              <input className="form-input" type="number" value={editShift.grace_mins} onChange={e=>setEditShift(s=>({...s,grace_mins:e.target.value}))} />
+            </div>
+            <div style={{display:'flex',gap:10}}>
+              <button className="btn btn-ghost" style={{flex:1,justifyContent:'center'}} onClick={()=>setEditShift(null)}>Cancel</button>
+              <button className="btn btn-primary" style={{flex:1,justifyContent:'center'}} onClick={saveEdit}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ── BUSINESSES SCREEN ─────────────────────────────────────────
 function BusinessesScreen() {
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm]       = useState({name:'', industry:''});
-  const [businesses, setBusinesses] = useState([
-    {id:1, name:'My Company', industry:'Technology'},
-  ]);
+  const [businesses, setBusinesses] = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [showAdd, setShowAdd]       = useState(false);
+  const [showBranch, setShowBranch] = useState(null); // business id
+  const [menuOpen, setMenuOpen]     = useState(null); // business id
+  const [editBiz, setEditBiz]       = useState(null);
+  const [form, setForm]             = useState({name:'', industry:'', address:'', email:'', phone:''});
+  const [branchForm, setBranchForm] = useState({name:'', address:''});
+  const [branches, setBranches]     = useState({});
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const setBr = (k,v) => setBranchForm(f=>({...f,[k]:v}));
 
-  const add = () => {
-    if (!form.name.trim()) return;
-    setBusinesses(b=>[...b,{id:Date.now(),...form}]);
-    setForm({name:'',industry:''}); setShowAdd(false);
+  const load = async () => {
+    setLoading(true);
+    const {data} = await supabase.from('businesses').select('*').order('created_at');
+    setBusinesses(data||[]);
+    // Load branches
+    if (data?.length) {
+      const {data: br} = await supabase.from('business_branches').select('*');
+      const grouped = {};
+      (br||[]).forEach(b=>{ if(!grouped[b.business_id]) grouped[b.business_id]=[]; grouped[b.business_id].push(b); });
+      setBranches(grouped);
+    }
+    setLoading(false);
   };
+  useEffect(()=>{ load(); },[]);
+
+  const add = async () => {
+    if (!form.name.trim()) return;
+    const {error} = await supabase.from('businesses').insert({
+      name: form.name.trim(), industry: form.industry, address: form.address,
+      email: form.email, phone: form.phone,
+    });
+    if (!error) { setForm({name:'',industry:'',address:'',email:'',phone:''}); setShowAdd(false); load(); }
+  };
+
+  const addBranch = async (bizId) => {
+    if (!branchForm.name.trim()) return;
+    await supabase.from('business_branches').insert({
+      business_id: bizId, name: branchForm.name.trim(), address: branchForm.address,
+    });
+    setBranchForm({name:'',address:''}); setShowBranch(null); load();
+  };
+
+  const deleteBiz = async (id) => {
+    await supabase.from('businesses').delete().eq('id',id);
+    setMenuOpen(null); load();
+  };
+
+  const saveEdit = async () => {
+    if (!editBiz) return;
+    await supabase.from('businesses').update({
+      name: editBiz.name, industry: editBiz.industry,
+      address: editBiz.address, email: editBiz.email, phone: editBiz.phone,
+    }).eq('id', editBiz.id);
+    setEditBiz(null); load();
+  };
+
+  const BottomSheet = ({title, onClose, children}) => (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:200,display:'flex',alignItems:'flex-end'}} onClick={onClose}>
+      <div style={{background:'white',borderRadius:'20px 20px 0 0',padding:24,width:'100%',maxHeight:'85vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+          <div style={{fontFamily:'var(--display)',fontSize:16,fontWeight:800}}>{title}</div>
+          <button onClick={onClose} style={{background:'none',border:'none',fontSize:22,cursor:'pointer'}}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
 
   return (
     <div className="fade-in">
       <div style={{color:'var(--primary)',fontWeight:600,fontSize:14,marginBottom:16,display:'flex',alignItems:'center',gap:6,cursor:'pointer'}} onClick={()=>setShowAdd(true)}>
         + Add new business
       </div>
-      <div style={{borderBottom:'1px solid var(--border)'}} />
-      <div style={{marginTop:8}}>
-        {businesses.map(b=>(
-          <div key={b.id} className="biz-card">
+      <div style={{borderBottom:'1px solid var(--border)',marginBottom:8}} />
+
+      {loading ? <div className="empty"><span className="spinner"/></div> :
+       businesses.length===0 ? <div className="empty-state"><div className="es-icon">🏢</div><div className="es-title">No businesses yet</div></div> :
+       businesses.map(b=>(
+        <div key={b.id}>
+          <div className="biz-card">
             <div className="biz-icon">🏢</div>
             <div className="biz-info">
               <div className="biz-name">{b.name}</div>
-              <div className="biz-type">{b.industry}</div>
+              <div className="biz-type">{b.industry||'—'}</div>
+              {branches[b.id]?.length>0 && (
+                <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>{branches[b.id].length} branch{branches[b.id].length>1?'es':''}</div>
+              )}
             </div>
-            <div style={{color:'var(--text3)',fontSize:20,cursor:'pointer'}}>···</div>
-          </div>
-        ))}
-      </div>
-
-      {showAdd && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:200,display:'flex',alignItems:'flex-end'}}>
-          <div style={{background:'white',borderRadius:'20px 20px 0 0',padding:24,width:'100%'}}>
-            <div style={{fontFamily:'var(--display)',fontSize:16,fontWeight:800,marginBottom:16}}>Add New Business</div>
-            <div className="form-group">
-              <label className="form-label">Business Name *</label>
-              <input className="form-input" placeholder="e.g. Tech World Ltd" value={form.name} onChange={e=>set('name',e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Industry</label>
-              <input className="form-input" placeholder="e.g. Information Technology" value={form.industry} onChange={e=>set('industry',e.target.value)} />
-            </div>
-            <div style={{display:'flex',gap:10}}>
-              <button className="btn btn-ghost" style={{flex:1,justifyContent:'center'}} onClick={()=>setShowAdd(false)}>Cancel</button>
-              <button className="btn btn-primary" style={{flex:1,justifyContent:'center'}} onClick={add}>Add</button>
+            <div style={{position:'relative'}}>
+              <div style={{color:'var(--text2)',fontSize:20,cursor:'pointer',padding:'4px 8px'}} onClick={()=>setMenuOpen(menuOpen===b.id?null:b.id)}>···</div>
+              {menuOpen===b.id && (
+                <>
+                  <div style={{position:'fixed',inset:0,zIndex:99}} onClick={()=>setMenuOpen(null)} />
+                  <div style={{position:'absolute',right:0,top:30,background:'white',border:'1px solid var(--border)',borderRadius:12,boxShadow:'0 4px 16px rgba(0,0,0,0.12)',zIndex:100,width:160,overflow:'hidden'}}>
+                    <div style={{padding:'12px 16px',fontSize:13,fontWeight:600,cursor:'pointer',borderBottom:'1px solid var(--border)'}} onClick={()=>{setEditBiz({...b});setMenuOpen(null);}}>✏️ Edit</div>
+                    <div style={{padding:'12px 16px',fontSize:13,fontWeight:600,cursor:'pointer',borderBottom:'1px solid var(--border)'}} onClick={()=>{setShowBranch(b.id);setMenuOpen(null);}}>🏪 Add Branch</div>
+                    <div style={{padding:'12px 16px',fontSize:13,fontWeight:600,cursor:'pointer',color:'var(--red)'}} onClick={()=>deleteBiz(b.id)}>🗑️ Delete</div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
+          {branches[b.id]?.map(br=>(
+            <div key={br.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0 10px 54px',borderBottom:'1px solid var(--border)'}}>
+              <div style={{width:8,height:8,borderRadius:'50%',background:'var(--border)',flexShrink:0}} />
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:600}}>{br.name}</div>
+                {br.address && <div style={{fontSize:11,color:'var(--text3)'}}>{br.address}</div>}
+              </div>
+            </div>
+          ))}
         </div>
+      ))}
+
+      {/* Add Business */}
+      {showAdd && (
+        <BottomSheet title="Add New Business" onClose={()=>setShowAdd(false)}>
+          <div className="form-group"><label className="form-label">Business Name *</label><input className="form-input" placeholder="e.g. Tech World Ltd" value={form.name} onChange={e=>set('name',e.target.value)} /></div>
+          <div className="form-group"><label className="form-label">Industry</label><input className="form-input" placeholder="e.g. Information Technology" value={form.industry} onChange={e=>set('industry',e.target.value)} /></div>
+          <div className="form-group"><label className="form-label">Email</label><input className="form-input" type="email" placeholder="business@email.com" value={form.email} onChange={e=>set('email',e.target.value)} /></div>
+          <div className="form-group"><label className="form-label">Phone</label><input className="form-input" placeholder="+234..." value={form.phone} onChange={e=>set('phone',e.target.value)} /></div>
+          <div className="form-group"><label className="form-label">Address</label><input className="form-input" placeholder="Business address" value={form.address} onChange={e=>set('address',e.target.value)} /></div>
+          <div style={{display:'flex',gap:10}}>
+            <button className="btn btn-ghost" style={{flex:1,justifyContent:'center'}} onClick={()=>setShowAdd(false)}>Cancel</button>
+            <button className="btn btn-primary" style={{flex:1,justifyContent:'center'}} onClick={add}>Add Business</button>
+          </div>
+        </BottomSheet>
+      )}
+
+      {/* Add Branch */}
+      {showBranch && (
+        <BottomSheet title="Add Branch" onClose={()=>setShowBranch(null)}>
+          <div className="form-group"><label className="form-label">Branch Name *</label><input className="form-input" placeholder="e.g. Lagos Branch" value={branchForm.name} onChange={e=>setBr('name',e.target.value)} /></div>
+          <div className="form-group"><label className="form-label">Address</label><input className="form-input" placeholder="Branch address" value={branchForm.address} onChange={e=>setBr('address',e.target.value)} /></div>
+          <div style={{display:'flex',gap:10}}>
+            <button className="btn btn-ghost" style={{flex:1,justifyContent:'center'}} onClick={()=>setShowBranch(null)}>Cancel</button>
+            <button className="btn btn-primary" style={{flex:1,justifyContent:'center'}} onClick={()=>addBranch(showBranch)}>Add Branch</button>
+          </div>
+        </BottomSheet>
+      )}
+
+      {/* Edit Business */}
+      {editBiz && (
+        <BottomSheet title="Edit Business" onClose={()=>setEditBiz(null)}>
+          <div className="form-group"><label className="form-label">Business Name</label><input className="form-input" value={editBiz.name} onChange={e=>setEditBiz(b=>({...b,name:e.target.value}))} /></div>
+          <div className="form-group"><label className="form-label">Industry</label><input className="form-input" value={editBiz.industry||''} onChange={e=>setEditBiz(b=>({...b,industry:e.target.value}))} /></div>
+          <div className="form-group"><label className="form-label">Email</label><input className="form-input" value={editBiz.email||''} onChange={e=>setEditBiz(b=>({...b,email:e.target.value}))} /></div>
+          <div className="form-group"><label className="form-label">Phone</label><input className="form-input" value={editBiz.phone||''} onChange={e=>setEditBiz(b=>({...b,phone:e.target.value}))} /></div>
+          <div className="form-group"><label className="form-label">Address</label><input className="form-input" value={editBiz.address||''} onChange={e=>setEditBiz(b=>({...b,address:e.target.value}))} /></div>
+          <div style={{display:'flex',gap:10}}>
+            <button className="btn btn-ghost" style={{flex:1,justifyContent:'center'}} onClick={()=>setEditBiz(null)}>Cancel</button>
+            <button className="btn btn-primary" style={{flex:1,justifyContent:'center'}} onClick={saveEdit}>Save Changes</button>
+          </div>
+        </BottomSheet>
       )}
     </div>
   );
@@ -2152,6 +2356,8 @@ function DepartmentsScreen() {
   const [search, setSearch]   = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [newDept, setNewDept] = useState('');
+  const [editDept, setEditDept] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(null);
 
   const load = () => supabase.from('departments').select('*').order('name').then(({data})=>setDepts(data||[]));
   useEffect(()=>load(),[]);
@@ -2164,7 +2370,13 @@ function DepartmentsScreen() {
 
   const del = async (id) => {
     await supabase.from('departments').delete().eq('id',id);
-    load();
+    setMenuOpen(null); load();
+  };
+
+  const saveEdit = async () => {
+    if (!editDept) return;
+    await supabase.from('departments').update({name:editDept.name}).eq('id',editDept.id);
+    setEditDept(null); load();
   };
 
   const filtered = depts.filter(d=>d.name.toLowerCase().includes(search.toLowerCase()));
@@ -2180,7 +2392,18 @@ function DepartmentsScreen() {
          filtered.map(d=>(
           <div key={d.id} className="dept-row">
             <span>{d.name}</span>
-            <span style={{color:'var(--text3)',fontSize:18,cursor:'pointer'}} onClick={()=>del(d.id)}>···</span>
+            <div style={{position:'relative'}}>
+              <span style={{color:'var(--text2)',fontSize:18,cursor:'pointer',padding:'4px 8px'}} onClick={()=>setMenuOpen(menuOpen===d.id?null:d.id)}>···</span>
+              {menuOpen===d.id && (
+                <>
+                  <div style={{position:'fixed',inset:0,zIndex:99}} onClick={()=>setMenuOpen(null)} />
+                  <div style={{position:'absolute',right:0,top:28,background:'white',border:'1px solid var(--border)',borderRadius:12,boxShadow:'0 4px 16px rgba(0,0,0,0.12)',zIndex:100,width:140,overflow:'hidden'}}>
+                    <div style={{padding:'12px 16px',fontSize:13,fontWeight:600,cursor:'pointer',borderBottom:'1px solid var(--border)'}} onClick={()=>{setEditDept({...d});setMenuOpen(null);}}>✏️ Edit</div>
+                    <div style={{padding:'12px 16px',fontSize:13,fontWeight:600,cursor:'pointer',color:'var(--red)'}} onClick={()=>del(d.id)}>🗑️ Delete</div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -2200,6 +2423,22 @@ function DepartmentsScreen() {
           </div>
         </div>
       )}
+
+      {editDept && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:200,display:'flex',alignItems:'flex-end'}}>
+          <div style={{background:'white',borderRadius:'20px 20px 0 0',padding:24,width:'100%'}}>
+            <div style={{fontFamily:'var(--display)',fontSize:16,fontWeight:800,marginBottom:16}}>Edit Department</div>
+            <div className="form-group">
+              <label className="form-label">Department Name</label>
+              <input className="form-input" value={editDept.name} onChange={e=>setEditDept(d=>({...d,name:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&saveEdit()} />
+            </div>
+            <div style={{display:'flex',gap:10}}>
+              <button className="btn btn-ghost" style={{flex:1,justifyContent:'center'}} onClick={()=>setEditDept(null)}>Cancel</button>
+              <button className="btn btn-primary" style={{flex:1,justifyContent:'center'}} onClick={saveEdit}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
       <button className="fab" onClick={()=>setShowAdd(true)}>+</button>
     </div>
   );
@@ -2207,7 +2446,6 @@ function DepartmentsScreen() {
 
 // ── INVITES SCREEN ────────────────────────────────────────────
 function InvitesScreen({ employees }) {
-  // Employees with no auth_user_id haven't accepted invite yet
   const pending = employees.filter(e=>!e.auth_user_id);
   return (
     <div className="fade-in">
@@ -2243,6 +2481,7 @@ function PlaceholderScreen({ title }) {
   );
 }
 
+// ── ADD SHIFT SCREEN ──────────────────────────────────────────
 // ── ADD SHIFT SCREEN ──────────────────────────────────────────
 function AddShiftScreen({ onSuccess }) {
   const [form, setForm] = useState({ name:'', start_time:'09:00', end_time:'18:00', grace_mins:'10' });
