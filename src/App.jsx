@@ -535,7 +535,7 @@ function SignUpScreen({ onBack, onSignedUp }) {
             <select className="phone-code-select" value={form.country_code} onChange={e=>set("country_code",e.target.value)}>
               {WA_COUNTRIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
             </select>
-            <input className="phone-number-input" placeholder="Enter mobile number" value={form.phone} onChange={e=>set("phone",e.target.value.replace(/\D/g,""))} />
+            <input className="phone-number-input" placeholder="Enter mobile number" value={form.phone} onChange={e=>set("phone",e.target.value.replace(/[^0-9]/g,""))} />
           </div>
         </div>
         <div className="form-group">
@@ -1620,7 +1620,7 @@ function ProfileScreen({ employee, onSaved }) {
             <select className="phone-code-select" value={form.country_code} onChange={e=>set('country_code',e.target.value)}>
               {WA_COUNTRIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
             </select>
-            <input className="phone-number-input" placeholder="Enter mobile number" value={form.phone} onChange={e=>set('phone',e.target.value.replace(/\D/g,''))} />
+            <input className="phone-number-input" placeholder="Enter mobile number" value={form.phone} onChange={e=>set('phone',e.target.value.replace(/[^0-9]/g,''))} />
           </div>
         </div>
       </div>
@@ -1872,38 +1872,71 @@ function PricingScreen() {
             <div style={{fontFamily:'var(--display)',fontSize:15,fontWeight:800,color:cur.color}}>{cur.name} Plan</div>
             <div style={{fontFamily:'var(--display)',fontSize:18,fontWeight:800,color:cur.color}}>{cur.displayPrice}<span style={{fontSize:11,fontWeight:400,color:'var(--text3)'}}>/{billing==='monthly'?'mo':'yr'}</span></div>
           </div>
+
+          <div style={{fontFamily:'var(--display)',fontSize:13,fontWeight:700,color:'var(--text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:10}}>Contact Details</div>
+          <div className="form-group"><input className="form-input" placeholder="Company Name *" value={form.company} onChange={e=>set('company',e.target.value)} /></div>
           <div className="form-group">
-            <input className="form-input" placeholder="Company Name *" value={form.company} onChange={e=>set('company',e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Mobile Number</label>
             <div className="phone-input-wrap">
-              <select className="phone-code-select">
-                {WA_COUNTRIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
-              </select>
-              <input className="phone-number-input" placeholder="Enter mobile number" value={form.phone} onChange={e=>set('phone',e.target.value)} />
+              <select className="phone-code-select">{WA_COUNTRIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}</select>
+              <input className="phone-number-input" placeholder="Mobile number" value={form.phone} onChange={e=>set('phone',e.target.value)} />
             </div>
           </div>
-          <div className="form-group">
-            <input className="form-input" placeholder="Email ID" value={form.email||''} onChange={e=>set('email',e.target.value)} />
+          <div className="form-group"><input className="form-input" placeholder="Email address" value={form.email||''} onChange={e=>set('email',e.target.value)} /></div>
+
+          <div style={{fontFamily:'var(--display)',fontSize:13,fontWeight:700,color:'var(--text2)',textTransform:'uppercase',letterSpacing:'0.5px',margin:'16px 0 10px'}}>Card Payment</div>
+          <div style={{background:'var(--bg3)',borderRadius:12,padding:16,marginBottom:16,border:'1px solid var(--border)'}}>
+            <div className="form-group">
+              <label className="form-label">Cardholder Name</label>
+              <input className="form-input" placeholder="Name on card" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Card Number</label>
+              <div style={{position:'relative'}}>
+                <input className="form-input" placeholder="0000 0000 0000 0000" maxLength={19}
+                  style={{paddingRight:50}}
+                  onChange={e=>{
+                    let v = e.target.value.replace(/[^0-9]/g,'').slice(0,16);
+                    e.target.value = v.replace(/(.{4})(?=.)/g,'$1 ');
+                  }} />
+                <span style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',fontSize:20}}>💳</span>
+              </div>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+              <div className="form-group" style={{marginBottom:0}}>
+                <label className="form-label">Expiry Date</label>
+                <input className="form-input" placeholder="MM/YY" maxLength={5}
+                  onChange={e=>{
+                    let v = e.target.value.replace(/[^0-9]/g,'');
+                    if(v.length>2) v = v.slice(0,2)+'/'+v.slice(2,4);
+                    e.target.value = v;
+                  }} />
+              </div>
+              <div className="form-group" style={{marginBottom:0}}>
+                <label className="form-label">CVV</label>
+                <input className="form-input" placeholder="•••" maxLength={3} type="password" />
+              </div>
+            </div>
           </div>
-          <div className="form-group">
-            <input className="form-input" placeholder="Billing Address" value={form.address} onChange={e=>set('address',e.target.value)} />
-          </div>
-          <div style={{display:'flex',gap:10,marginBottom:20}}>
+
+          <div style={{display:'flex',gap:10,marginBottom:16}}>
             <input className="form-input" placeholder="Coupon code" style={{flex:1}} value={form.coupon} onChange={e=>set('coupon',e.target.value)} />
             <button className="btn btn-ghost" style={{padding:'11px 14px'}}>Apply</button>
           </div>
+
           <div style={{background:'var(--bg3)',borderRadius:10,padding:14,marginBottom:16}}>
-            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:8}}>
-              <span>Base Price</span><span style={{fontWeight:600}}>{cur.displayPrice}</span>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:8,paddingBottom:8,borderBottom:'1px solid var(--border)'}}>
+              <span>{cur.name} Plan ({billing})</span><span style={{fontWeight:600}}>{cur.displayPrice}</span>
             </div>
             <div style={{display:'flex',justifyContent:'space-between',fontSize:14,fontWeight:700}}>
               <span>Total</span><span style={{color:cur.color}}>{cur.displayPrice}</span>
             </div>
           </div>
+
+          <div style={{fontSize:11,color:'var(--text3)',textAlign:'center',marginBottom:12}}>
+            🔒 Your payment is secured with 256-bit SSL encryption
+          </div>
           <button className="btn" style={{width:'100%',justifyContent:'center',padding:14,fontSize:15,...cur.ctaStyle,color:'white',borderRadius:12}}>
-            Continue to Payment
+            Pay {cur.displayPrice} Now
           </button>
         </Modal>
       )}
@@ -2468,6 +2501,360 @@ function InvitesScreen({ employees }) {
   );
 }
 
+// ── NOTIFICATION SETTINGS ────────────────────────────────────
+function NotifSettingsScreen() {
+  const [settings, setSettings] = useState({
+    attendance_reminder: true,
+    late_arrival_alert: true,
+    absent_alert: true,
+    gps_violation_alert: true,
+    clockin_confirmation: false,
+  });
+  const [saved, setSaved] = useState(false);
+
+  const toggle = k => setSettings(s=>({...s,[k]:!s[k]}));
+
+  const items = [
+    { key:'attendance_reminder',  label:'Attendance Reminder',    sub:'Remind employees to clock in at shift start' },
+    { key:'late_arrival_alert',   label:'Late Arrival Alert',     sub:'Notify admin when employee arrives late' },
+    { key:'absent_alert',         label:'Absent Alert',           sub:'Notify admin when employee does not clock in' },
+    { key:'gps_violation_alert',  label:'GPS Violation Alert',    sub:'Alert when employee clocks in outside geofence' },
+    { key:'clockin_confirmation', label:'Clock-in Confirmation',  sub:'Send confirmation to employee on successful clock-in' },
+  ];
+
+  const save = async () => {
+    await supabase.from('app_settings').update({ notif_settings: settings }).eq('id',1);
+    setSaved(true); setTimeout(()=>setSaved(false),2000);
+  };
+
+  return (
+    <div className="fade-in">
+      {saved && <div className="success-box">✓ Notification settings saved.</div>}
+      <div className="card" style={{marginBottom:16}}>
+        {items.map(item=>(
+          <div key={item.key} style={{display:'flex',alignItems:'center',gap:12,padding:'14px 0',borderBottom:'1px solid var(--border)'}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:600,color:'var(--text)'}}>{item.label}</div>
+              <div style={{fontSize:11,color:'var(--text3)',marginTop:3}}>{item.sub}</div>
+            </div>
+            <div
+              style={{width:44,height:24,borderRadius:12,cursor:'pointer',
+                background:settings[item.key]?'var(--primary)':'var(--bg4)',
+                display:'flex',alignItems:'center',padding:3,
+                justifyContent:settings[item.key]?'flex-end':'flex-start',
+                transition:'all 0.2s',flexShrink:0}}
+              onClick={()=>toggle(item.key)}
+            >
+              <div style={{width:18,height:18,borderRadius:'50%',background:'white',boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',padding:14,fontSize:15}} onClick={save}>
+        Save Settings
+      </button>
+    </div>
+  );
+}
+
+// ── ATTENDANCE SETTINGS ───────────────────────────────────────
+function AttendanceSettingsScreen() {
+  const [settings, setSettings] = useState({
+    not_set_as_absent: false,
+    restrict_past_editing: false,
+    reconfirm_change: false,
+    payroll_cycle_start: 1,
+    payroll_cycle_end: 30,
+  });
+  const [saved, setSaved] = useState(false);
+  const toggle = k => setSettings(s=>({...s,[k]:!s[k]}));
+  const set = (k,v) => setSettings(s=>({...s,[k]:v}));
+
+  const save = async () => {
+    await supabase.from('app_settings').update({ attendance_settings: settings }).eq('id',1);
+    setSaved(true); setTimeout(()=>setSaved(false),2000);
+  };
+
+  const Toggle = ({k, label, sub}) => (
+    <div style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 0',borderBottom:'1px solid var(--border)'}}>
+      <div style={{flex:1}}>
+        <div style={{fontSize:14,fontWeight:600,color:'var(--text)'}}>{label}</div>
+        {sub && <div style={{fontSize:11,color:'var(--text3)',marginTop:3,lineHeight:1.4}}>{sub}</div>}
+      </div>
+      <div
+        style={{width:44,height:24,borderRadius:12,cursor:'pointer',
+          background:settings[k]?'var(--primary)':'var(--bg4)',
+          display:'flex',alignItems:'center',padding:3,marginTop:2,
+          justifyContent:settings[k]?'flex-end':'flex-start',
+          transition:'all 0.2s',flexShrink:0}}
+        onClick={()=>toggle(k)}
+      >
+        <div style={{width:18,height:18,borderRadius:'50%',background:'white',boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}} />
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="fade-in">
+      {saved && <div className="success-box">✓ Attendance settings saved.</div>}
+
+      <div style={{fontFamily:'var(--display)',fontSize:13,fontWeight:700,color:'var(--text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>Attendance Settings</div>
+      <div className="card" style={{marginBottom:16}}>
+        <Toggle k="not_set_as_absent" label="Not Set as Absent" sub="Employees with no attendance set will be treated as Present instead of Absent." />
+        <Toggle k="restrict_past_editing" label="Restrict Past Attendance Editing" sub="Prevent supervisors from editing attendance records for dates prior to the current day." />
+        <Toggle k="reconfirm_change" label="Reconfirm Attendance Change" sub="Require confirmation before any attendance record is modified." />
+      </div>
+
+      <div style={{fontFamily:'var(--display)',fontSize:13,fontWeight:700,color:'var(--text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>Payroll Cycle</div>
+      <div className="card" style={{marginBottom:16}}>
+        <div style={{padding:'14px 0',borderBottom:'1px solid var(--border)'}}>
+          <div style={{fontSize:14,fontWeight:600,marginBottom:10}}>Cycle Start Day</div>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+            {Array.from({length:28},(_,i)=>i+1).map(d=>(
+              <div key={d} onClick={()=>set('payroll_cycle_start',d)} style={{
+                width:36,height:36,borderRadius:8,display:'flex',alignItems:'center',justifyContent:'center',
+                cursor:'pointer',fontSize:13,fontWeight:600,
+                background:settings.payroll_cycle_start===d?'var(--primary)':'var(--bg3)',
+                color:settings.payroll_cycle_start===d?'white':'var(--text2)',
+                border:`1px solid ${settings.payroll_cycle_start===d?'var(--primary)':'var(--border)'}`,
+              }}>{d}</div>
+            ))}
+          </div>
+        </div>
+        <div style={{padding:'14px 0'}}>
+          <div style={{fontSize:14,fontWeight:600,marginBottom:10}}>Cycle End Day</div>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+            {Array.from({length:28},(_,i)=>i+1).map(d=>(
+              <div key={d} onClick={()=>set('payroll_cycle_end',d)} style={{
+                width:36,height:36,borderRadius:8,display:'flex',alignItems:'center',justifyContent:'center',
+                cursor:'pointer',fontSize:13,fontWeight:600,
+                background:settings.payroll_cycle_end===d?'var(--primary)':'var(--bg3)',
+                color:settings.payroll_cycle_end===d?'white':'var(--text2)',
+                border:`1px solid ${settings.payroll_cycle_end===d?'var(--primary)':'var(--border)'}`,
+              }}>{d}</div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',padding:14,fontSize:15,marginBottom:20}} onClick={save}>
+        Save Settings
+      </button>
+    </div>
+  );
+}
+
+// ── PAYROLL SETTINGS ──────────────────────────────────────────
+function PayrollSettingsScreen() {
+  const [form, setForm] = useState({
+    thirty_day_rule: false,
+    late_deduction: '500',
+    absent_deduction: '2500',
+    overtime_rate: '1.5',
+  });
+  const [saved, setSaved] = useState(false);
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  useEffect(()=>{
+    supabase.from('app_settings').select('*').eq('id',1).single()
+      .then(({data})=>{
+        if(data){
+          setForm(f=>({...f,
+            late_deduction: String(data.late_deduction_ngn||500),
+            absent_deduction: String(data.absent_deduction_ngn||2500),
+          }));
+        }
+      });
+  },[]);
+
+  const save = async () => {
+    await supabase.from('app_settings').update({
+      late_deduction_ngn:   parseInt(form.late_deduction)||500,
+      absent_deduction_ngn: parseInt(form.absent_deduction)||2500,
+      payroll_settings: form,
+    }).eq('id',1);
+    setSaved(true); setTimeout(()=>setSaved(false),2000);
+  };
+
+  return (
+    <div className="fade-in">
+      {saved && <div className="success-box">✓ Payroll settings saved.</div>}
+
+      <div className="card" style={{marginBottom:16}}>
+        <div style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 0',borderBottom:'1px solid var(--border)'}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:600}}>30 Days Payroll Rule</div>
+            <div style={{fontSize:11,color:'var(--text3)',marginTop:3,lineHeight:1.4}}>Calculate payroll on 30 fixed days. Disable to calculate on actual month days.</div>
+          </div>
+          <div
+            style={{width:44,height:24,borderRadius:12,cursor:'pointer',
+              background:form.thirty_day_rule?'var(--primary)':'var(--bg4)',
+              display:'flex',alignItems:'center',padding:3,marginTop:2,
+              justifyContent:form.thirty_day_rule?'flex-end':'flex-start',transition:'all 0.2s',flexShrink:0}}
+            onClick={()=>set('thirty_day_rule',!form.thirty_day_rule)}
+          >
+            <div style={{width:18,height:18,borderRadius:'50%',background:'white',boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}} />
+          </div>
+        </div>
+        <div style={{padding:'14px 0',borderBottom:'1px solid var(--border)'}}>
+          <label className="form-label">Late Arrival Deduction (₦ per occurrence)</label>
+          <input className="form-input" type="number" value={form.late_deduction} onChange={e=>set('late_deduction',e.target.value)} placeholder="500" />
+        </div>
+        <div style={{padding:'14px 0',borderBottom:'1px solid var(--border)'}}>
+          <label className="form-label">Absence Deduction (₦ per day)</label>
+          <input className="form-input" type="number" value={form.absent_deduction} onChange={e=>set('absent_deduction',e.target.value)} placeholder="2500" />
+        </div>
+        <div style={{padding:'14px 0'}}>
+          <label className="form-label">Overtime Rate Multiplier</label>
+          <input className="form-input" type="number" step="0.1" value={form.overtime_rate} onChange={e=>set('overtime_rate',e.target.value)} placeholder="1.5" />
+          <div style={{fontSize:11,color:'var(--text3)',marginTop:4}}>e.g. 1.5 = 1.5× hourly rate for overtime hours</div>
+        </div>
+      </div>
+
+      <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',padding:14,fontSize:15,marginBottom:20}} onClick={save}>
+        Save Payroll Settings
+      </button>
+    </div>
+  );
+}
+
+// ── LANGUAGE ──────────────────────────────────────────────────
+function LanguageScreen() {
+  const languages = [
+    { code:'en', name:'English', native:'English', flag:'🇬🇧', available:true },
+    { code:'fr', name:'French', native:'Français', flag:'🇫🇷', available:false },
+    { code:'yo', name:'Yoruba', native:'Yorùbá', flag:'🇳🇬', available:false },
+    { code:'ha', name:'Hausa', native:'Hausa', flag:'🇳🇬', available:false },
+    { code:'ig', name:'Igbo', native:'Igbo', flag:'🇳🇬', available:false },
+    { code:'tw', name:'Twi', native:'Twi', flag:'🇬🇭', available:false },
+    { code:'wo', name:'Wolof', native:'Wolof', flag:'🇸🇳', available:false },
+  ];
+  const [selected, setSelected] = useState('en');
+
+  return (
+    <div className="fade-in">
+      <div style={{fontSize:13,color:'var(--text2)',marginBottom:16}}>Select your preferred language. More languages coming soon.</div>
+      <div className="card">
+        {languages.map(lang=>(
+          <div key={lang.code} onClick={()=>lang.available&&setSelected(lang.code)}
+            style={{display:'flex',alignItems:'center',gap:14,padding:'14px 0',borderBottom:'1px solid var(--border)',cursor:lang.available?'pointer':'default'}}>
+            <div style={{fontSize:24}}>{lang.flag}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:600,color:lang.available?'var(--text)':'var(--text3)'}}>{lang.name}</div>
+              <div style={{fontSize:11,color:'var(--text3)'}}>{lang.native}</div>
+            </div>
+            {!lang.available && (
+              <span style={{fontSize:10,fontWeight:700,padding:'3px 8px',borderRadius:20,background:'var(--bg4)',color:'var(--text3)'}}>Coming Soon</span>
+            )}
+            {lang.available && selected===lang.code && (
+              <div style={{width:20,height:20,borderRadius:'50%',background:'var(--primary)',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:12}}>✓</div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── SHARE APP ─────────────────────────────────────────────────
+function ShareAppScreen() {
+  const appUrl = 'https://attendai-bnfg.vercel.app';
+  const [copied, setCopied] = useState(false);
+
+  const copy = () => {
+    navigator.clipboard.writeText(appUrl).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2000); });
+  };
+
+  const shareWhatsApp = () => {
+    const msg = encodeURIComponent(`Check out AttendAI — AI-Powered Workforce Attendance Platform for African businesses. ${appUrl}`);
+    window.open(`https://wa.me/?text=${msg}`, '_blank');
+  };
+
+  const shareNative = () => {
+    if (navigator.share) {
+      navigator.share({ title:'AttendAI', text:'AI-Powered Workforce Attendance Platform', url: appUrl });
+    }
+  };
+
+  return (
+    <div className="fade-in">
+      <div style={{background:'linear-gradient(135deg,var(--primary),#1447C0)',borderRadius:16,padding:24,textAlign:'center',marginBottom:20,color:'white'}}>
+        <div style={{fontSize:40,marginBottom:10}}>📱</div>
+        <div style={{fontFamily:'var(--display)',fontSize:18,fontWeight:800,marginBottom:6}}>Share AttendAI</div>
+        <div style={{fontSize:13,opacity:0.85,lineHeight:1.5}}>Help other African businesses manage their workforce smarter with AI-powered attendance tracking.</div>
+      </div>
+
+      <div className="card" style={{marginBottom:12}}>
+        <div style={{fontSize:12,color:'var(--text2)',marginBottom:8,fontWeight:600}}>App Link</div>
+        <div style={{display:'flex',gap:10,alignItems:'center'}}>
+          <div style={{flex:1,background:'var(--bg3)',borderRadius:10,padding:'11px 14px',fontSize:13,color:'var(--text2)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{appUrl}</div>
+          <button className="btn btn-primary" style={{padding:'11px 16px',flexShrink:0}} onClick={copy}>
+            {copied ? '✓ Copied' : 'Copy'}
+          </button>
+        </div>
+      </div>
+
+      <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:20}}>
+        <button className="btn" style={{width:'100%',justifyContent:'center',padding:14,fontSize:14,background:'#25D366',color:'white',borderRadius:12}} onClick={shareWhatsApp}>
+          💬 Share on WhatsApp
+        </button>
+        {navigator.share && (
+          <button className="btn btn-ghost" style={{width:'100%',justifyContent:'center',padding:14,fontSize:14,borderRadius:12}} onClick={shareNative}>
+            📤 More Sharing Options
+          </button>
+        )}
+      </div>
+
+      <div className="card">
+        <div style={{fontSize:13,fontWeight:600,marginBottom:8}}>Why share AttendAI?</div>
+        {['AI face recognition for accurate attendance','GPS geofencing stops fraudulent clock-ins','Payroll calculations done automatically','Built specifically for West African businesses'].map(f=>(
+          <div key={f} style={{display:'flex',gap:10,padding:'8px 0',borderBottom:'1px solid var(--border)',fontSize:13}}>
+            <span style={{color:'var(--green)'}}>✓</span><span>{f}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── PRIVACY POLICY ────────────────────────────────────────────
+function PrivacyPolicyScreen() {
+  const sections = [
+    ["1. Introduction", "AttendAI is committed to protecting the personal information of our users across West Africa and beyond. This Privacy Policy explains how we collect, use, store, and protect your information when you use the AttendAI platform."],
+    ["2. Information We Collect", "We collect the following:\n- Personal details: name, email, phone number\n- Biometric data: facial recognition descriptors for identity verification\n- Location data: GPS coordinates captured at clock-in/out events\n- Employment info: role, department, shift, attendance records\n- Device info: browser type and device identifiers for security"],
+    ["3. How We Use Your Information", "Your information is used to:\n- Verify employee identity through AI face recognition\n- Record and manage attendance and work hours\n- Calculate payroll and generate payslips\n- Send attendance reminders and alerts to administrators\n- Improve security and performance of our platform"],
+    ["4. Biometric Data", "Facial recognition data is stored securely in encrypted form. We do not sell, share, or transfer biometric data to third parties. Face descriptors cannot be reverse-engineered into photographs. Employees may request deletion of their biometric data at any time."],
+    ["5. Data Storage and Security", "All data is stored on secure cloud servers with industry-standard encryption. We implement role-based access controls so only authorised personnel can access sensitive data. Data is backed up regularly."],
+    ["6. Data Sharing", "We do not sell your personal information. Data may be shared only:\n- With your employer that has subscribed to AttendAI\n- With service providers who help us operate the platform\n- When required by applicable law or court order"],
+    ["7. Your Rights", "You have the right to:\n- Access your personal data\n- Request correction of inaccurate information\n- Request deletion of your account and data\n- Withdraw consent for biometric data processing\n- Receive a copy of your data in a portable format\n\nContact us at rollyadamstechworld@gmail.com"],
+    ["8. Cookies", "AttendAI uses minimal cookies necessary for authentication and session management. We do not use tracking cookies or third-party advertising cookies."],
+    ["9. Children and Minors", "AttendAI is designed for use by working adults (18 years and older). We do not knowingly collect information from individuals under 18 years of age."],
+    ["10. Changes to This Policy", "We may update this Privacy Policy from time to time. We will notify users of significant changes via email or in-app notification. Continued use of AttendAI after changes constitutes acceptance of the updated policy."],
+    ["11. Contact Us", "For privacy-related questions:\n\nEmail: rollyadamstechworld@gmail.com\nPlatform: AttendAI - AI-Powered Workforce Attendance\nRegion: West Africa"],
+  ];
+
+  return (
+    <div className="fade-in">
+      <div style={{background:'var(--primary-light)',borderRadius:12,padding:14,marginBottom:16,display:'flex',gap:10,alignItems:'flex-start'}}>
+        <span style={{fontSize:20}}>📄</span>
+        <div>
+          <div style={{fontWeight:700,fontSize:14,color:'var(--primary)'}}>Privacy Policy</div>
+          <div style={{fontSize:11,color:'var(--text2)',marginTop:2}}>Last updated: April 2026</div>
+        </div>
+      </div>
+      {sections.map(([title, content])=>(
+        <div key={title} className="card" style={{marginBottom:10}}>
+          <div style={{fontFamily:'var(--display)',fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:8}}>{title}</div>
+          <div style={{fontSize:13,color:'var(--text2)',lineHeight:1.7,whiteSpace:'pre-line'}}>{content}</div>
+        </div>
+      ))}
+      <div style={{textAlign:'center',padding:'16px 0',fontSize:11,color:'var(--text3)'}}>
+        2026 AttendAI. All rights reserved.
+      </div>
+    </div>
+  );
+}
+
 // ── PLACEHOLDER SCREEN ────────────────────────────────────────
 function PlaceholderScreen({ title }) {
   return (
@@ -2634,7 +3021,7 @@ function AddEmployeeScreen({ onSuccess }) {
                 <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
               ))}
             </select>
-            <input className="phone-number-input" placeholder="Enter mobile number" value={form.phone} onChange={e=>set('phone',e.target.value.replace(/\D/g,''))} />
+            <input className="phone-number-input" placeholder="Enter mobile number" value={form.phone} onChange={e=>set('phone',e.target.value.replace(/[^0-9]/g,''))} />
           </div>
           <div style={{fontSize:11,color:'var(--text3)',marginTop:4}}>{country.flag} {country.name}</div>
         </div>
