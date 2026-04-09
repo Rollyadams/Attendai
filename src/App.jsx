@@ -3441,20 +3441,9 @@ export default function App() {
             <div className="topbar-title">{PAGE_TITLES[page]||"AttendAI"}</div>
             <span className="topbar-time"><Clock /></span>
             <div className="topbar-dot" title="Supabase Connected" />
-            <button className="profile-btn" onClick={()=>setProfileOpen(o=>!o)}>
+            <button className="profile-btn" onClick={()=>setPage('account')}>
               {employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
             </button>
-            {profileOpen && (
-              <>
-                <div style={{position:'fixed',inset:0,zIndex:199}} onClick={()=>setProfileOpen(false)} />
-                <ProfileDropdown
-                  employee={employee}
-                  onLogout={()=>{ setProfileOpen(false); handleLogout(); }}
-                  onNavigate={(p)=>setPage(p)}
-                  onClose={()=>setProfileOpen(false)}
-                />
-              </>
-            )}
           </div>
           <div className="content">
             {renderPage()}
