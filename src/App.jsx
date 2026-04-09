@@ -1475,6 +1475,12 @@ function AccountScreen({ employee, onLogout, employees }) {
       if (sub==='inactive')          return <InactiveScreen employees={employees||[]} />;
       if (sub==='departments')       return <DepartmentsScreen />;
       if (sub==='invites')           return <InvitesScreen employees={employees||[]} />;
+      if (sub==='notifSettings')     return <NotifSettingsScreen />;
+      if (sub==='attendanceSettings')return <AttendanceSettingsScreen />;
+      if (sub==='payrollSettings')   return <PayrollSettingsScreen />;
+      if (sub==='language')          return <LanguageScreen />;
+      if (sub==='share')             return <ShareAppScreen />;
+      if (sub==='privacy')           return <PrivacyPolicyScreen />;
       return <PlaceholderScreen title={subTitles[sub]||sub} />;
     };
     return (
