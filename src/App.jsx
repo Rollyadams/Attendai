@@ -3279,41 +3279,46 @@ export default function App() {
 
   const setPage = (newPage) => {
     setProfileOpen(false);
-        if (ROOT_PAGES.includes(newPage)) {
+    if (ROOT_PAGES.includes(newPage)) {
       setPrevPage(null);
-      // Reset history stack for root pages
-      window.history.pushState({ page: newPage, prev: null }, '', window.location.pathname);
     } else {
       setPrevPage(page);
-      // Push state so Android back button works
-      window.history.pushState({ page: newPage, prev: page }, '', window.location.pathname);
     }
     setPageState(newPage);
+    // Always push so phone back button has somewhere to go
+    window.history.pushState({ page: newPage, prev: ROOT_PAGES.includes(newPage) ? null : page }, '', window.location.pathname);
   };
 
   const goBack = () => {
     if (prevPage) {
-      setPageState(prevPage);
-      setPrevPage(null);
+      window.history.back(); // triggers popstate which handles state update
     }
   };
 
   const canGoBack = !!prevPage;
 
+  // Push a base state on mount so the very first back press doesn't exit the app
+  useEffect(() => {
+    window.history.replaceState({ page: page, prev: null }, '', window.location.pathname);
+  }, []);
+
   // Listen for Android/browser back button
   useEffect(() => {
     const handlePopState = (e) => {
-      if (e.state && e.state.prev) {
-        setPageState(e.state.prev);
+      const prev = e.state?.prev;
+      if (prev) {
+        setPageState(prev);
         setPrevPage(null);
-      } else if (prevPage) {
-        setPageState(prevPage);
-        setPrevPage(null);
+        // Keep a new base state so repeated back presses work
+        window.history.pushState({ page: prev, prev: null }, '', window.location.pathname);
+      } else {
+        // On root page - push a dummy state to prevent app exit
+        window.history.pushState({ page: page, prev: null }, '', window.location.pathname);
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [prevPage]);
+  }, [page, prevPage]);
   const [loading, setLoading]         = useState(true);
   const [employees, setEmployees]     = useState([]);
   const [clockIns, setClockIns]       = useState([]);
