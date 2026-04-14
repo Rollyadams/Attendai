@@ -3277,48 +3277,64 @@ export default function App() {
 
   const ROOT_PAGES = ["dashboard","clockin","attendance","employees","myrecord"];
 
+  // Use a ref so popstate handler always has fresh page value
+  const pageRef = useRef(page);
+  const prevPageRef = useRef(prevPage);
+  useEffect(() => { pageRef.current = page; }, [page]);
+  useEffect(() => { prevPageRef.current = prevPage; }, [prevPage]);
+
   const setPage = (newPage) => {
     setProfileOpen(false);
+    const curPage = pageRef.current;
     if (ROOT_PAGES.includes(newPage)) {
       setPrevPage(null);
+      prevPageRef.current = null;
     } else {
-      setPrevPage(page);
+      setPrevPage(curPage);
+      prevPageRef.current = curPage;
     }
     setPageState(newPage);
-    // Always push so phone back button has somewhere to go
-    window.history.pushState({ page: newPage, prev: ROOT_PAGES.includes(newPage) ? null : page }, '', window.location.pathname);
+    pageRef.current = newPage;
+    window.history.pushState({ attendai: true }, '', window.location.pathname);
   };
 
   const goBack = () => {
-    if (prevPage) {
-      window.history.back(); // triggers popstate which handles state update
+    const prev = prevPageRef.current;
+    if (prev) {
+      setPageState(prev);
+      pageRef.current = prev;
+      setPrevPage(null);
+      prevPageRef.current = null;
     }
   };
 
   const canGoBack = !!prevPage;
 
-  // Push a base state on mount so the very first back press doesn't exit the app
+  // On mount: push two states so first back press never exits
   useEffect(() => {
-    window.history.replaceState({ page: page, prev: null }, '', window.location.pathname);
+    window.history.replaceState({ attendai: true }, '', window.location.pathname);
+    window.history.pushState({ attendai: true }, '', window.location.pathname);
   }, []);
 
-  // Listen for Android/browser back button
+  // Phone back button handler — uses refs to avoid stale closure
   useEffect(() => {
-    const handlePopState = (e) => {
-      const prev = e.state?.prev;
+    const handlePopState = () => {
+      const prev = prevPageRef.current;
       if (prev) {
         setPageState(prev);
+        pageRef.current = prev;
         setPrevPage(null);
-        // Keep a new base state so repeated back presses work
-        window.history.pushState({ page: prev, prev: null }, '', window.location.pathname);
+        prevPageRef.current = null;
+        // Push fresh state so next back press still works
+        window.history.pushState({ attendai: true }, '', window.location.pathname);
       } else {
-        // On root page - push a dummy state to prevent app exit
-        window.history.pushState({ page: page, prev: null }, '', window.location.pathname);
+        // Already at root — push state back to prevent app exit
+        window.history.pushState({ attendai: true }, '', window.location.pathname);
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [page, prevPage]);
+  }, []); // empty deps — uses refs not state
   const [loading, setLoading]         = useState(true);
   const [employees, setEmployees]     = useState([]);
   const [clockIns, setClockIns]       = useState([]);
